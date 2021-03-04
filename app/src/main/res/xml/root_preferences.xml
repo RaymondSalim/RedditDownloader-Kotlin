@@ -1,0 +1,33 @@
+<PreferenceScreen
+        xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+            app:title="@string/general_header">
+
+        <Preference
+                app:key="DOWNLOAD_LOCATION"
+                android:title="Download Location"
+                android:persistent="true"
+
+        />
+
+<!--        <EditTextPreference-->
+<!--                app:key="signature"-->
+<!--                app:title="@string/signature_title"-->
+<!--                app:useSimpleSummaryProvider="true"/>-->
+
+        <ListPreference
+                app:key="PREFERRED_THEME"
+                app:title="@string/theme_title"
+                app:defaultValue="-100"
+                app:useSimpleSummaryProvider="true"
+                app:entries="@array/theme_entries"
+                app:entryValues="@array/theme_values"
+        />
+
+
+    </PreferenceCategory>
+
+
+
+</PreferenceScreen>
