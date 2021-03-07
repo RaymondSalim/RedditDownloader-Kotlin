@@ -5,6 +5,7 @@
     <string name="skip">Skip</string>
     <string name="next">Next</string>
     <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
 
 
     <!--String for splash screen-->
@@ -14,7 +15,14 @@
 
     <!--String for bottom navigation bar-->
     <string name="gallery">Gallery</string>
+    <string name="favorites">Favorite</string>
     <string name="settings">Settings</string>
+
+
+    <!-- Dialog Fragment-->
+    <string name="url_placeholder">http://</string>
+    <string name="dialog_download">Download</string>
+    <string name="dialog_fragment_content">Enter an Instagram or Reddit URL</string>
 
     <!-- Preference Titles -->
     <string name="general_header">General</string>
@@ -29,4 +37,6 @@
     <string name="attachment_title">Download incoming attachments</string>
     <string name="attachment_summary_on">Automatically download attachments for incoming emails</string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

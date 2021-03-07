@@ -39,7 +39,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:minHeight="64dp"
-            android:layout_marginBottom="@dimen/bottmNavBarMargin"
+            android:layout_marginBottom="@dimen/bottomNavBarMargin"
             app:labelVisibilityMode="selected"
             app:itemIconSize="24dp"
             app:itemIconTint="@drawable/bottom_nav_color"
