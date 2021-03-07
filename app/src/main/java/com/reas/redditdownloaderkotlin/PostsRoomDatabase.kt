@@ -67,6 +67,94 @@ public abstract class PostsRoomDatabase: RoomDatabase() {
                     )
 
                     postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/asd/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/fds/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/dsaf/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/fewf/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/qwr3r/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/gtb/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/a/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+                    postsDao.insert(post)
+
+                    post = Posts(
+                        url = "reddit.com/r/gifs/comments/erb/browsing/",
+                        postTitle = "Browsing",
+                        postSubreddit = "r/gifs",
+                        postDate = 1609782038L,
+                        postUser = "jeandolly",
+                        filePath = "/storage/emulated/0/Android/data/com.reas.redditdownloaderkotlin/files/kqdk42.gif"
+                    )
+
+
                 }
             }
         }
