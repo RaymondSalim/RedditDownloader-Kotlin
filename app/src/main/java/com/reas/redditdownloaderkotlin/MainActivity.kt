@@ -28,16 +28,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
 //        Log.d(TAG, savedInstanceState.toString())
 
-        val requestListeners: MutableSet<RequestListener> = HashSet()
-        requestListeners.add(RequestLoggingListener())
-        val config = ImagePipelineConfig.newBuilder(this@MainActivity) // other setters
-            .setRequestListeners(requestListeners)
-            .build()
-        Fresco.initialize(this@MainActivity, config)
-        FLog.setMinimumLoggingLevel(FLog.VERBOSE)
-
-//        Fresco.initialize(this@MainActivity)
-        initializeBottomNavView()
+        Fresco.initialize(this@MainActivity)
 
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("lastFragment")) {
@@ -46,6 +37,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         }
 
         initializeFragments()
+
+        initializeBottomNavView()
+
 
         Toast.makeText(applicationContext, noBackupFilesDir.absolutePath, Toast.LENGTH_SHORT).show()
         Log.d(TAG, "onCreate: $noBackupFilesDir")
@@ -57,8 +51,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         Log.d(TAG, "onSaveInstanceState: Saving")
         super.onSaveInstanceState(outState)
     }
-
-
 
     private fun initializeFragments() {
         Log.d(TAG, "initializeFragments: List of Fragments: ${supportFragmentManager.fragments.toString()}")
@@ -78,6 +70,68 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }
         }
 
+        hideFragments()
+    }
+
+    private fun initializeBottomNavView() {
+        val bottomNavViewBackground = bottom_nav.background as MaterialShapeDrawable
+
+        bottomNavViewBackground.shapeAppearanceModel =
+            bottomNavViewBackground.shapeAppearanceModel.toBuilder()
+                .setAllCorners(CornerFamily.ROUNDED, 25F)
+                .build()
+
+        bottom_nav.setOnNavigationItemSelectedListener { item ->
+
+            Log.d(TAG, "initializeBottomNavView: Last Fragment = $lastFragment")
+            // Skips if the clicked menuItem is the current fragment
+            if (lastFragment.tag?.toInt() == item.itemId) {
+                Log.d(TAG, "initializeBottomNavView: Skipped")
+                return@setOnNavigationItemSelectedListener false
+            }
+
+            Log.d(TAG, "initializeBottomNavView: Hiding Last Fragment")
+            supportFragmentManager.commitNow {
+                setAnimation(this, lastFragment)
+                hide(lastFragment)
+
+                Log.d(TAG, "initializeBottomNavView: when(item.itemId)")
+                Log.d(TAG, "initializeBottomNavView: item.itemId = ${item.itemId}")
+                Log.d(TAG, "initializeBottomNavView: list of fragments = ${supportFragmentManager.fragments}")
+                val frag = supportFragmentManager.findFragmentByTag(item.itemId.toString())
+                Log.d(TAG, "initializeBottomNavView: frag = $frag")
+
+                if (frag != null) {
+                    setAnimation(this, frag)
+                    show(frag)
+                    lastFragment = frag
+                }
+            }
+            true
+        }
+    }
+
+    private fun setAnimation(fragmentTransaction: FragmentTransaction, fragment: Fragment) {
+        with (fragment) {
+            when (this) {
+                is GalleryFragment -> {
+                    fragmentTransaction.setCustomAnimations(
+                            R.anim.slide_right_enter,
+                            R.anim.slide_left_exit
+                    )
+                }
+                is SettingsFragment -> {
+                    fragmentTransaction.setCustomAnimations(
+                            R.anim.slide_left_enter,
+                            R.anim.slide_right_exit
+                    )
+                }
+                else -> {}
+            }
+        }
+    }
+
+    private fun hideFragments() {
         // Gets updated fragment list
         val listOfFragments = supportFragmentManager.fragments
         Log.d(TAG, "initializeFragments: List of Fragments: $listOfFragments")
@@ -101,73 +155,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }
 
             listOfFragments.forEach {
+                Log.d(TAG, "hideFragments: Hiding $it")
                 hide(it)
-            }
-        }
-    }
-
-    private fun initializeBottomNavView() {
-        val bottomNavViewBackground = bottom_nav.background as MaterialShapeDrawable
-
-        bottomNavViewBackground.shapeAppearanceModel =
-            bottomNavViewBackground.shapeAppearanceModel.toBuilder()
-                .setAllCorners(CornerFamily.ROUNDED, 25F)
-                .build()
-
-        bottom_nav.setOnNavigationItemSelectedListener { item ->
-
-            Log.d(TAG, "initializeBottomNavView: Last Fragment = $lastFragment")
-            // Skips if the clicked menuItem is the current fragment
-            if (lastFragment.tag?.toInt() == item.itemId) {
-                Log.d(TAG, "initializeBottomNavView: Skipped")
-                return@setOnNavigationItemSelectedListener false
-            }
-
-            Log.d(TAG, "initializeBottomNavView: Hiding Last Fragment")
-            supportFragmentManager.commitNow { hide(lastFragment) }
-
-            Log.d(TAG, "initializeBottomNavView: when(item.itemId)")
-            Log.d(TAG, "initializeBottomNavView: item.itemId = ${item.itemId}")
-            Log.d(TAG, "initializeBottomNavView: list of fragments = ${supportFragmentManager.fragments}")
-
-            val frag = supportFragmentManager.findFragmentByTag(item.itemId.toString())
-            Log.d(TAG, "initializeBottomNavView: frag = $frag")
-
-            when (item.itemId) {
-                R.id.gallery_fragment -> {
-                    Log.d(TAG, "initializeBottomNavView: item.itemId = R.id.gallery_fragment")
-
-                    supportFragmentManager.commitNow {
-                        // Doesn't work on activity destroy
-                        // show(galleryFragment)
-
-                        if (frag != null) {
-                            show(frag)
-                            lastFragment = frag
-                        }
-                    }
-
-                    true
-                }
-
-                R.id.settings_fragment -> {
-                    Log.d(TAG, "initializeBottomNavView: item.itemId = R.id.settings_fragment")
-
-                    supportFragmentManager.commitNow {
-//                         Doesn't work on activity destroy
-//                         show(settingsFragment)
-
-                        if (frag != null) {
-                            show(frag)
-                            lastFragment = frag
-                        }
-                    }
-
-                    true
-                }
-                else -> {
-                    false
-                }
             }
         }
     }
