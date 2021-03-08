@@ -18,7 +18,7 @@
                android:layout_height="wrap_content"
                 android:text="@string/dialog_download"
                 style="@style/MaterialAlertDialog.MaterialComponents.Title.Text"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 />
 
         <com.google.android.material.textview.MaterialTextView
@@ -27,13 +27,33 @@
                 android:text="@string/dialog_fragment_content"
                 />
 
-        <com.google.android.material.textfield.TextInputEditText
+        <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/url_input_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textWebEmailAddress"
                 android:layout_marginTop="16dp"
-                android:hint="@string/url_placeholder"
-        />
+                app:hintTextColor="@color/hintTextColor"
+                app:endIconMode="clear_text"
+                app:errorEnabled="true"
+                app:prefixText="@string/url_prefix_text"
+                style="@style/TextInputLayout"
+        >
+
+                <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/url_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textWebEmailAddress"
+                        android:hint="@string/url_placeholder"
+                />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/favorites_confirmation"
+                />
 
         <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_gravity="right"
@@ -66,7 +86,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/dialog_download"
-                        android:textColor="@color/buttonPositiveBackground"
+                        android:textColor="@color/colorAccent"
                         android:radius="@dimen/dialogCornerRadius"
                         android:textAllCaps="false"
                 />

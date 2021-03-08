@@ -20,7 +20,9 @@
 
 
     <!-- Dialog Fragment-->
-    <string name="url_placeholder">http://</string>
+    <string name="url_placeholder">URL</string>
+    <string name="url_prefix_text">https://</string>
+    <string name="favorites_confirmation">Add to favorites</string>
     <string name="dialog_download">Download</string>
     <string name="dialog_fragment_content">Enter an Instagram or Reddit URL</string>
 

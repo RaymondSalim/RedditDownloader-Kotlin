@@ -5,6 +5,7 @@
     <color name="colorAccent">#03DAC5</color>
     <color name="textColor">#FF000000</color>
     <color name="textColorOpposite">#FFFFFFFF</color>
+    <color name="hintTextColor">#323232</color>
 
     <color name="bottomNavSelected">#03DAC5</color>
     <color name="bottomNavDefault">#717171</color>
