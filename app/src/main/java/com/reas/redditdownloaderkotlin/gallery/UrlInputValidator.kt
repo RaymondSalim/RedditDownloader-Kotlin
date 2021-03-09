@@ -43,7 +43,7 @@ class UrlInputValidator(private val layout: TextInputLayout?) {
     }
 
     private fun togglePrefix(text: String) {
-        val regex = """^(\bhttps?://\b)""".toRegex(RegexOption.IGNORE_CASE)
+        val regex = """^(https?://)""".toRegex(RegexOption.IGNORE_CASE)
         layout?.prefixText = if (regex.containsMatchIn(text)) "" else "https://"
     }
 }
