@@ -70,7 +70,8 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
                         appDB.jobsDao().updateProgress(progress, this@DownloadWorker.url)
 
                         NotificationManagerCompat.from(applicationContext).apply {
-                            builder!!.setProgress(100, (progress * 100).toInt(), false)
+                            builder!!
+                                .setProgress(100, (progress * 100).toInt(), false)
                             notify(jobId.toInt(), builder!!.build())
                         }
                     }
@@ -83,7 +84,8 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 
 
                         NotificationManagerCompat.from(applicationContext).apply {
-                            builder!!.setContentText("Download complete")
+                            builder!!
+                                .setContentText("Download complete")
                                 .setProgress(0, 0, false)
                             notify(jobId.toInt(), builder!!.build())
                         }
@@ -154,11 +156,13 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
         builder = NotificationCompat.Builder(applicationContext, applicationContext.getString(R.string.notification_channel_id)).apply {
             setSmallIcon(R.drawable.ic_notification_icon)
             setContentTitle("Dit")
-            setContentText("Download in Progress")
         }
 
         NotificationManagerCompat.from(applicationContext).apply {
-            builder!!.setProgress(100, 0, true)
+            builder!!
+                .setProgress(100, 0, true)
+                .setContentText("Download in Progress")
+
             notify(jobId.toInt(), builder!!.build())
         }
     }
