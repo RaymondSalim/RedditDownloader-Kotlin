@@ -1,6 +1,8 @@
 package com.reas.redditdownloaderkotlin
+
+
 import com.google.common.truth.Truth.assertThat
-import com.reas.redditdownloaderkotlin.gallery.UrlInputValidator
+import com.reas.redditdownloaderkotlin.util.UrlInputValidator
 import org.junit.Test
 
 
@@ -30,7 +32,7 @@ class UrlInputValidatorTest {
         validator.validate("www.reddit.com/r/pics/comments/92dd8/test_post_please_ignore/")
         assertThat(validator.isValid()).isTrue()
 
-        validator.validate("www.redd.it/92dd8")
+        validator.validate("redd.it/92dd8")
         assertThat(validator.isValid()).isTrue()
 
         validator.validate("reddit.com/r/wallstreetbets/comments/lycp91/wsb_rules_please_read_before_posting/?utm_source=share&utm_medium=web2x&context=3")
@@ -68,7 +70,7 @@ class UrlInputValidatorTest {
         validator.validate("http://www.reddit.com/r/pics/comments/92dd8/test_post_please_ignore/")
         assertThat(validator.isValid()).isTrue()
 
-        validator.validate("http://www.redd.it/92dd8")
+        validator.validate("http://redd.it/92dd8")
         assertThat(validator.isValid()).isTrue()
 
         validator.validate("http://reddit.com/r/wallstreetbets/comments/lycp91/wsb_rules_please_read_before_posting/?utm_source=share&utm_medium=web2x&context=3")
@@ -106,7 +108,7 @@ class UrlInputValidatorTest {
         validator.validate("https://www.reddit.com/r/pics/comments/92dd8/test_post_please_ignore/")
         assertThat(validator.isValid()).isTrue()
 
-        validator.validate("https://www.redd.it/92dd8")
+        validator.validate("https://redd.it/92dd8")
         assertThat(validator.isValid()).isTrue()
 
         validator.validate("https://reddit.com/r/wallstreetbets/comments/lycp91/wsb_rules_please_read_before_posting/?utm_source=share&utm_medium=web2x&context=3")

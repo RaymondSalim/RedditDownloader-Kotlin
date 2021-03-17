@@ -1,6 +1,8 @@
 package com.reas.redditdownloaderkotlin
 
 import android.app.Application
+import com.reas.redditdownloaderkotlin.database.AppDB
+import com.reas.redditdownloaderkotlin.repository.PostsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
@@ -10,6 +12,6 @@ class RedditDownloaderApplication: Application() {
 
     // Using by lazy so the database and the repository are only created when they're needed
     // rather than when the application starts
-    val database by lazy { PostsRoomDatabase.getDatabase(this@RedditDownloaderApplication, applicationScope) }
+    val database by lazy { AppDB.getDatabase(this@RedditDownloaderApplication, applicationScope) }
     val repository by lazy { PostsRepository(database.postsDao()) }
 }

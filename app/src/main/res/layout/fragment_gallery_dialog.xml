@@ -7,7 +7,7 @@
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        tools:context=".gallery.GalleryDialogFragment"
+        tools:context=".ui.gallery.GalleryDialogFragment"
         android:paddingTop="16dp"
         android:paddingHorizontal="16dp"
         android:paddingBottom="8dp"

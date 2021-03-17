@@ -3,7 +3,9 @@
     package="com.reas.redditdownloaderkotlin" >
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
@@ -18,14 +20,14 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
         <activity
-                android:name=".splashscreen.SplashActivity"
+                android:name="com.reas.redditdownloaderkotlin.ui.splashscreen.SplashActivity"
                 android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" >
+        <activity android:name=".ui.main.MainActivity" >
         </activity>
     </application>
 

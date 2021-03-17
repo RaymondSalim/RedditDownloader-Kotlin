@@ -3,7 +3,7 @@
              xmlns:tools="http://schemas.android.com/tools"
              android:layout_width="match_parent"
              android:layout_height="match_parent"
-             tools:context=".gallery.GalleryFragment">
+             tools:context=".ui.gallery.GalleryFragment">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/post_recyclerview"
@@ -13,6 +13,8 @@
         android:paddingBottom="96dp"
         android:clipToPadding="false"
     />
+
+
 
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
