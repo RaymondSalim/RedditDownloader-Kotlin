@@ -1,6 +1,9 @@
 <resources>
     <!--TODO RENAME APP_NAME-->
-    <string name="app_name">Reddit Downloader Kotlin</string>
+    <string name="app_name">Dit</string>
+    <string name="notification_channel_id">DIT_CHANNEL</string>
+    <string name="notification_channel_name">Downloads</string>
+    <string name="notification_channel_description">Notification of active downloads</string>
 
     <string name="skip">Skip</string>
     <string name="next">Next</string>
@@ -25,6 +28,8 @@
     <string name="favorites_confirmation">Add to favorites</string>
     <string name="dialog_download">Download</string>
     <string name="dialog_fragment_content">Enter an Instagram or Reddit URL</string>
+
+    <string name="download_started_notification">Download Started</string>
 
     <!-- Preference Titles -->
     <string name="general_header">General</string>
