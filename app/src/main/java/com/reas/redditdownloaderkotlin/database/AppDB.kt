@@ -179,7 +179,7 @@ abstract class AppDB: RoomDatabase() {
 
     companion object {
         @Volatile
-        private var INSTANCE: AppDB? = null
+        var INSTANCE: AppDB? = null
 
         fun getDatabase(context: Context): AppDB {
             return INSTANCE ?: synchronized(this) {
