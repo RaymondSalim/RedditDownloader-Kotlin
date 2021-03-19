@@ -14,7 +14,8 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "posts_reddit_table")
 data class RedditPosts(
-    @PrimaryKey @ColumnInfo(name = "url") val url: String,
+    @ColumnInfo(name = "url") val url: String?,
+    @PrimaryKey @ColumnInfo(name = "permalink") val permalink: String,
     @ColumnInfo(name = "title") val title: String,
     @ColumnInfo(name = "subreddit") val subreddit: String,
     @ColumnInfo(name = "date") val date: Long,
