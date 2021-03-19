@@ -10,7 +10,6 @@ import android.util.Log
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.fuel.core.requests.DestinationAsStreamCallback
 import com.github.kittinunf.result.Result;
 import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.util.downloader.reddit.RedditJson
@@ -21,13 +20,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.*
 import kotlin.NullPointerException
-
-import android.content.Intent
-
-
-
-
-
+import android.content.res.AssetFileDescriptor
+import android.database.sqlite.SQLiteConstraintException
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
+import android.os.ParcelFileDescriptor
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.fuel.core.ProgressCallback
+import com.github.kittinunf.fuel.core.requests.FileDestinationCallback
+import com.github.kittinunf.fuel.core.requests.StreamDestinationCallback
+import java.nio.ByteBuffer
+import java.nio.file.Files
+import java.time.LocalDateTime
+import java.util.*
 
 
 private const val TAG = "Downloader"
@@ -38,19 +45,31 @@ typealias Observer = (status: JobStatus) -> Unit
  * [url] is validated string.
  */
 class Downloader() {
+    /**
+     *  The Downloader class will run in the following order when the start() function is called
+     *  NOTE: onError() can be called anywhere in the following steps. When it is called, the process is stopped
+     *  1. onStart()
+     *  2. onJsonGrabStart()
+     *  3. onJsonGrabEnd()
+     *  4. onDownloadStart()
+     *  4a.onDownloadProgressChange()
+     *  5. onDownloadEnd()
+     *  6. onProcessingStart()
+     *  7. onProcessingEnd()
+     *  8. onSuccess() / onError()
+     *
+     */
     interface DownloaderListener {
-        fun onSuccess(data: MutableMap<DownloadData, Any>) {}
-        fun onError(exception: Exception) {
-            throw exception
-        }
-        fun onJsonGrabbed(title: String) {
-
-        }
-        fun onDownloadStart() {}
-        fun onDownloadEnd() {}
-        fun onDownloadProgressChange(progress: Float) {
-            Log.d(TAG, "onDownloadProgressChange: $progress")
-        }
+        fun onStart()
+        fun onJsonGrabStart()
+        fun onJsonGrabEnd(title: String)
+        fun onDownloadStart()
+        fun onDownloadProgressChange(progress: Float)
+        fun onDownloadEnd()
+        fun onProcessingStart()
+        fun onProcessingEnd()
+        fun onSuccess(data: MutableMap<DownloadData, Any>)
+        fun onError(exception: Exception)
     }
 
     private var observers = mutableListOf<Observer>()
@@ -65,6 +84,7 @@ class Downloader() {
     private var fileUri: Uri? = null
     private var mimeType: String? = null
     private var mediaIsImage: Boolean? = null
+    private var isVRedditGif = false
 
     fun registerObservers(observer: Observer): Downloader {
         observers.add(observer)
@@ -138,25 +158,29 @@ class Downloader() {
         return ""
     }
 
-    private fun downloadFromMediaUrl(urlIn: String) {
+    private fun downloadFromMediaUrl(urlIn: String, force: Boolean = false) {
+        listener?.onDownloadStart()
         updateStatus(JobStatus.MEDIA_DOWNLOAD_START)
 
-        if ("""(v.redd)""".toRegex().containsMatchIn(urlIn)) {
+        if (urlIn.contains("v.redd") && !force) {
             return downloadVRedditMedia(urlIn)
         }
 
         var outputStream: OutputStream? = null
 
-        val progressHandler: ((readBytes:Long, totalBytes:Long) -> Unit) = { readBytes, totalBytes ->
-            Log.d(TAG, "downloadFromMediaUrl: $totalBytes")
-            listener?.onDownloadProgressChange(readBytes / totalBytes.toFloat())
+        val progressHandler: ProgressCallback = { readBytes, totalBytes ->
+            listener?.onDownloadProgressChange(readBytes / totalBytes.toFloat() )
         }
         
-        val streamDestination: ((response: Response, request: Request) -> Pair<OutputStream, DestinationAsStreamCallback>) = { response, request ->
+        val streamDestination: StreamDestinationCallback = { response, request ->
             Log.d(TAG, "downloadFromMediaUrl: StreamDestination")
-            val fileName = getFileName() + "." + getFileExtension(response)
+            val fileName = generateFileName(extension = getFileExtension(response), prefix = if (isReddit) "REDDIT_" else "INSTAGRAM_")
 
-            outputStream = getOutputStream(response, request, fileName = fileName)
+            do {
+                try {
+                    outputStream = getOutputStream(fileName = fileName)
+                } catch (ex: SQLiteConstraintException) {}
+            } while (outputStream == null)
 
             Pair(outputStream!!, { ByteArrayInputStream(ByteArray(0)) } )
         }
@@ -171,8 +195,12 @@ class Downloader() {
         when (result) {
             is Result.Success -> {
                 Log.d(TAG, "downloadFromMediaUrl: success")
-                updateStatus(JobStatus.MEDIA_DOWNLOAD_END)
                 listener?.onDownloadEnd()
+                updateStatus(JobStatus.MEDIA_DOWNLOAD_END)
+
+                // No processing needed, so onProcessingStart() is skipped
+                listener?.onProcessingEnd()
+                updateStatus(JobStatus.PROCESSING_END)
             }
 
             is Result.Failure -> {
@@ -182,6 +210,10 @@ class Downloader() {
             }
         }
 
+    }
+
+    private fun generateFileName(extension: String, prefix: String): String {
+        return "${prefix}_${getFileName()}_${LocalDateTime.now()}.$extension"
     }
 
     private fun removeMediaStorePendingStatus() {
@@ -194,18 +226,227 @@ class Downloader() {
 
     }
 
+    /**
+     * VReddit video file codec are not commonly supported, so we are converting it.
+     */
     private fun downloadVRedditMedia(urlIn: String) {
-        // TODO
+        this.mimeType = "video/mp4"
+        val fileName = generateFileName(extension = "mp4", prefix = "REDDIT_")
+        var outputStream: OutputStream? = null
+
+        do {
+            try {
+                outputStream = getOutputStream(fileName, mimeType = "video/mp4")
+            } catch (ex: SQLiteConstraintException) {}
+        } while (outputStream == null)
+
+        var audioFuel: Triple<Request, Response, Result<ByteArray, FuelError>>? = null
+        val outputFile = File.createTempFile(getFileName() + ".mp4", null, appContext!!.externalCacheDir)
+        val tempVideoFile: File = File.createTempFile(getFileName() + ".video", null, appContext!!.externalCacheDir) // TODO CHECK IF EXTENSION WORKS
+        var tempAudioFile: File? = null
+
+
+        // Audio file not present
+        // This is not a guarantee that no audio file is present, further check is required
+        val hasAudio: Boolean = if (isVRedditGif) {
+            false
+        } else {
+            val audioUrl = getVRedditAudioUrl(urlIn)
+
+            audioFuel = Fuel.get(audioUrl)
+                .response()
+
+            val mimeType = audioFuel.second.headers["content-type"].first()
+
+            // Checks if the page has valid audio file
+            (mimeType == "video/mp4")
+        }
+
+        // Downloads audio file if it exists
+        if (hasAudio) {
+            val audioFileName = getFileName() + ".audio" // TODO CHECK IF EXTENSION WORKS
+            tempAudioFile = File.createTempFile(audioFileName, null, appContext!!.externalCacheDir)
+            Log.d(TAG, "downloadVRedditMedia: audioFile: ${tempAudioFile!!.canonicalPath}")
+            val inputStream = audioFuel!!.second.body().toStream()
+            copyStreamToFile(inputStream, tempAudioFile)
+        }
+
+        // Downloads video file
+        val fileDestinationCallback: FileDestinationCallback = { _, _ ->
+            tempVideoFile
+        }
+
+        val progressCallback: ProgressCallback = { readBytes, totalBytes ->
+            Log.d(TAG, "downloadFromMediaUrl: $totalBytes")
+            listener?.onDownloadProgressChange(readBytes / totalBytes.toFloat() )
+        }
+        val (request, response, result) = Fuel.download(urlIn)
+            .fileDestination(fileDestinationCallback)
+            .progress(progressCallback)
+            .response()
+
+        when (result) {
+            is Result.Success -> {
+                Log.d(TAG, "downloadFromMediaUrl: success")
+                listener?.onDownloadEnd()
+                updateStatus(JobStatus.MEDIA_DOWNLOAD_END)
+            }
+
+            is Result.Failure -> {
+                Log.d(TAG, "downloadFromMediaUrl: failed")
+                updateStatus(JobStatus.FAILED)
+                listener?.onError(result.getException())
+                throw result.getException()
+            }
+        }
+        listener?.onDownloadEnd()
+        updateStatus(JobStatus.MEDIA_DOWNLOAD_END)
+
+        listener?.onProcessingStart()
+        updateStatus(JobStatus.PROCESSING_START)
+        // Starts muxing
+        try {
+            val muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+
+            val videoMedEx = MediaExtractor()
+            var audioMedEx: MediaExtractor? = null
+
+            val videoAFD = AssetFileDescriptor(ParcelFileDescriptor.open(tempVideoFile, ParcelFileDescriptor.MODE_READ_WRITE), 0, AssetFileDescriptor.UNKNOWN_LENGTH)
+            val audioAFD: AssetFileDescriptor
+
+            videoMedEx.apply {
+                setDataSource(videoAFD.fileDescriptor, videoAFD.startOffset, videoAFD.length)
+                selectTrack(0)
+                seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+            }
+
+            val sampleSize = 1024 * 1024
+            val offset = 100
+
+            val videoMedFormat = videoMedEx.getTrackFormat(0)
+            val audioMedFormat: MediaFormat
+
+            var videoTrackIndex = muxer.addTrack(videoMedFormat)
+            var audioTrackIndex = 0
+
+            val videoByteBuffer = ByteBuffer.allocate(sampleSize)
+            var audioByteBuffer: ByteBuffer? = null
+
+            var isFinished = false
+
+            val videoBufferInfo = MediaCodec.BufferInfo()
+            var audioBufferInfo: MediaCodec.BufferInfo? = null
+
+            if (hasAudio) {
+                audioMedEx = MediaExtractor()
+                audioAFD = AssetFileDescriptor(ParcelFileDescriptor.open(tempAudioFile, ParcelFileDescriptor.MODE_READ_WRITE), 0, AssetFileDescriptor.UNKNOWN_LENGTH)
+
+                audioMedEx.apply {
+                    setDataSource(audioAFD.fileDescriptor, audioAFD.startOffset, audioAFD.length)
+                    selectTrack(0)
+                    seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+                }
+
+                audioMedFormat = audioMedEx.getTrackFormat(0)
+                audioTrackIndex = muxer.addTrack(audioMedFormat)
+                audioByteBuffer = ByteBuffer.allocate(sampleSize)
+                audioBufferInfo = MediaCodec.BufferInfo()
+
+            }
+
+            muxer.start()
+            while (!isFinished) {
+                videoBufferInfo.apply {
+                    this.offset = offset
+                    this.size = videoMedEx.readSampleData(videoByteBuffer, offset)
+                }
+
+                if (videoBufferInfo.size < 0) {
+                    Log.d(TAG, "downloadVRedditMedia: Saw video EOF")
+                    isFinished = true
+                    videoBufferInfo.size = 0
+                } else {
+                    videoBufferInfo.apply {
+                        this.presentationTimeUs = videoMedEx.sampleTime
+                        this.flags = videoMedEx.sampleFlags
+
+                        muxer.writeSampleData(videoTrackIndex, videoByteBuffer, videoBufferInfo)
+                        videoMedEx.advance()
+                    }
+                }
+            }
+
+            if (hasAudio) {
+                var audioFinished = false
+
+                while (!audioFinished) {
+                    audioBufferInfo!!.apply {
+                        this.offset = offset
+                        this.size = audioMedEx!!.readSampleData(audioByteBuffer!!, offset)
+                    }
+
+                    if (videoBufferInfo.size < 0 || audioBufferInfo.size < 0) {
+                        Log.d(TAG, "downloadVRedditMedia: Saw audio EOF")
+                        audioFinished = true
+                        audioBufferInfo.size = 0
+                    } else {
+                        audioBufferInfo.apply {
+                            this.presentationTimeUs = audioMedEx!!.sampleTime
+                            this.flags = audioMedEx.sampleFlags
+
+                            muxer.writeSampleData(audioTrackIndex, audioByteBuffer!!, audioBufferInfo)
+                            audioMedEx.advance()
+
+//                        frameCount++
+                        }
+                    }
+
+                }
+            }
+
+            muxer.stop()
+            muxer.release()
+        } catch (fileNotFound: FileNotFoundException) {
+
+        } catch (exception: Exception) {
+            listener?.onError(exception)
+        } finally {
+            tempAudioFile?.delete()
+            tempVideoFile.delete()
+
+        }
+
+        Files.copy(outputFile.toPath(), outputStream)
+        outputStream.close()
+        removeMediaStorePendingStatus()
+        outputFile.delete()
+
+        listener?.onProcessingEnd()
+        updateStatus(JobStatus.PROCESSING_END)
     }
 
-    private fun getOutputStream(response: Response, request: Request, fileName: String): OutputStream {
-        val resolver = appContext!!.contentResolver
-        val mimeType = response.headers["content-type"]
-        this.mimeType = mimeType.first()
-        mediaIsImage = (mimeType.first().substringBefore("/") == "image" )
+    private fun copyStreamToFile(inputStream: InputStream, file: File) {
+        inputStream.use { input ->
+            val outputStream = FileOutputStream(file)
+            input.copyTo(outputStream)
+        }
+    }
 
+    private fun getVRedditAudioUrl(urlIn: String): String {
+        val regex = """(DASH_(?:\d)+.mp4)""".toRegex()
+        return urlIn.replace(regex, "DASH_audio.mp4")
+    }
+
+    /**
+     * Gets OutputStream from mediastore if API > 29 else from FileOutputStream
+     */
+    private fun getOutputStream(fileName: String, mimeType: String? = null): OutputStream {
+        val responseMimeType: String = mimeType ?: this.mimeType!!
+
+        mediaIsImage = (responseMimeType.substringBefore("/") == "image" )
+        val envDir = if (mediaIsImage!!) Environment.DIRECTORY_PICTURES else Environment.DIRECTORY_MOVIES
+        val resolver = appContext!!.contentResolver
         var outputStream: OutputStream? = null
-        var envDir: String? = null
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val mediaContentUri =
@@ -221,31 +462,27 @@ class Downloader() {
 
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, mimeType.first())
+                put(MediaStore.MediaColumns.MIME_TYPE, responseMimeType)
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
 
-                envDir = if (mediaIsImage!!) Environment.DIRECTORY_PICTURES else Environment.DIRECTORY_MOVIES
                 put(
                     MediaStore.MediaColumns.RELATIVE_PATH,
                     envDir + File.separator + appContext!!.getString(R.string.app_name)
                 )
             }
 
-
             resolver.run {
-                fileUri = resolver.insert(mediaContentUri, values) ?: return@run
+                this@Downloader.fileUri = this.insert(mediaContentUri, values) ?: throw SQLiteConstraintException("UNIQUE constraint failed")
                 outputStream = openOutputStream(fileUri!!) ?: return@run
             }
 
         } else {
-            envDir = if (mediaIsImage!!) Environment.DIRECTORY_PICTURES else Environment.DIRECTORY_MOVIES
 
             val path = Environment.getExternalStoragePublicDirectory( envDir + File.separator + appContext!!.getString(R.string.app_name) ).absolutePath
             val file = File(path, fileName)
             this.fileUri = Uri.fromFile(file)
             outputStream = FileOutputStream(file)
         }
-
 
         return outputStream!!
     }
@@ -261,6 +498,7 @@ class Downloader() {
 
     private fun getFileExtension(response: Response): String {
         val mimeType = response.headers["content-type"]
+        this.mimeType = mimeType.first()
         return mimeType.first().substringAfter("/")
     }
 
@@ -276,6 +514,7 @@ class Downloader() {
     }
     
     fun getPageJson(): BaseJSON {
+        listener?.onJsonGrabStart()
         updateStatus(JobStatus.GETTING_JSON_START)
 
         val (request, response, result) = Fuel.get(processedUrl!!)
@@ -304,11 +543,13 @@ class Downloader() {
                         isLenient = true
                     }.decodeFromString<RedditJson>(post)
 
-                    redditJson.mediaUrl = RedditMediaUrl(JSONObject(post)).getUrl()
+                    val redditMediaUrl = RedditMediaUrl(JSONObject(post))
+                    redditJson.mediaUrl = redditMediaUrl.getUrl()
+                    this.isVRedditGif = redditMediaUrl.isGif()
                     this.baseJSON = redditJson
-                    listener?.onJsonGrabbed(redditJson.title)
 
-
+                    listener?.onJsonGrabEnd(title = redditJson.title)
+                    updateStatus(JobStatus.GETTING_JSON_END)
                     return this.baseJSON as RedditJson
                 }
                 // Is instagram
@@ -322,15 +563,20 @@ class Downloader() {
             is Result.Failure -> {
                 val ex = result.getException()
                 Log.d(TAG, "getPageJson exception: $ex")
+
+                updateStatus(JobStatus.FAILED)
+
+                val exception = Exception("Failed to get page JSON")
+                listener?.onError(exception)
+                throw exception
             }
         }
-
-        updateStatus(JobStatus.FAILED)
-        throw Exception("Failed to get page JSON")
     }
 
     fun start() {
         Log.d(TAG, "start: Start")
+        listener?.onStart()
+        updateStatus(JobStatus.START)
 
         try {
             if (this.baseJSON == null) {
@@ -342,8 +588,8 @@ class Downloader() {
             downloadFromMediaUrl(mediaUrl)
 
         } catch (ex: NullPointerException) {
-            updateStatus(JobStatus.FAILED)
             listener?.onError(ex)
+            updateStatus(JobStatus.FAILED)
         }
 
         listener?.onSuccess(
