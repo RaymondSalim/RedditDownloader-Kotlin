@@ -31,8 +31,19 @@
 
     <string name="download_started_notification">Download Started</string>
 
+    <!-- Notification Strings-->
+    <string name="notif_start">Starting</string>
+    <string name="notif_post_info_get">Retrieving post information</string>
+    <string name="notif_post_info_success">Retrieved post information</string>
+    <string name="notif_media_download_start">Downloading media</string>
+    <string name="notif_media_download_complete">Download complete</string>
+    <string name="notif_media_process_start">Processing media file</string>
+    <string name="notif_media_process_complete">Processing completed</string>
+    <string name="notif_success">Post downloaded</string>
+    <string name="notif_error">An error has occurred</string>
+
     <!-- Preference Titles -->
-    <string name="general_header">General</string>
+    <string name="general_header">General</string>ad
     <string name="sync_header">Sync</string>
 
     <!-- General Preferences -->
