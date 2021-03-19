@@ -1,16 +1,12 @@
 package com.reas.redditdownloaderkotlin.util.downloader
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.media.MediaScannerConnection
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -21,84 +17,172 @@ import com.reas.redditdownloaderkotlin.models.Posts
 import com.reas.redditdownloaderkotlin.models.PostsPlatform
 import com.reas.redditdownloaderkotlin.models.RedditPosts
 import com.reas.redditdownloaderkotlin.util.downloader.reddit.RedditJson
-import java.io.File
 
 private const val TAG = "DownloadWorker"
 
 class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): Worker(appContext, workerParameters) {
-    private lateinit var appDB: AppDB
+    private val appDB: AppDB = AppDB.getDatabase(applicationContext)
     private lateinit var url: String
     private var builder: NotificationCompat.Builder? = null
     private var jobId: Long = 0
+    private var lastUpdate = 0L
+
+    private val downloadListener = object : Downloader.DownloaderListener {
+        override fun onStart() {
+            createNotification()
+
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_start)
+            )
+        }
+
+        override fun onJsonGrabStart() {
+            updateNotification(
+                contentText = "Retrieving Post Information",
+            )
+        }
+
+        override fun onJsonGrabEnd(title: String) {
+            NotificationManagerCompat.from(applicationContext).apply {
+                builder!!.setContentTitle(title)
+                notify(jobId.toInt(), builder!!.build())
+            }
+
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_post_info_get),
+                progress = Triple(
+                    first = 100, // max
+                    second = 0.05F, // progress
+                    third = false // indeterminate
+                )
+            )
+        }
+
+        override fun onDownloadStart() {
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_media_download_start),
+            )
+        }
+
+        override fun onDownloadProgressChange(progress: Float) {
+            // https://github.com/kittinunf/fuel/blob/master/fuel/README.md#throttling-progress-output
+            if (System.currentTimeMillis() - lastUpdate > 500) {
+                lastUpdate = System.currentTimeMillis()
+//                NotificationManagerCompat.from(applicationContext).apply {
+//                    builder!!
+//                        .setProgress(100, (progress * 100).toInt(), false)
+//                    notify(jobId.toInt(), builder!!.build())
+//                }
+
+                val calculatedProgress = 0.05F + (progress * 85 / 100)
+
+                updateNotification(
+                    progress = Triple(
+                        first = 100, // max
+                        second = calculatedProgress, // progress
+                        third = false // indeterminate
+                    )
+                )
+            }
+        }
+
+        override fun onDownloadEnd() {
+            Log.d(TAG, "onDownloadEnd: Download End")
+//                        NotificationManagerCompat.from(applicationContext).apply {
+//                            builder!!
+//                                .setContentText("Download Complete")
+//                                .setProgress(100, 90, false)
+//                            notify(jobId.toInt(), builder!!.build())
+//                        }
+
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_media_download_complete),
+                progress = Triple(
+                    first = 100, // max
+                    second = 0.9F, // progress
+                    third = false // indeterminate
+                )
+            )
+        }
+
+        override fun onProcessingStart() {
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_media_process_start),
+                progress = Triple(
+                    first = 100, // max
+                    second = 0.9F, // progress
+                    third = false // indeterminate
+                )
+            )
+        }
+
+        override fun onProcessingEnd() {
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_media_process_complete),
+                progress = Triple(
+                    first = 100, // max
+                    second = 1F, // progress
+                    third = false // indeterminate
+                )
+            )
+        }
+
+        override fun onSuccess(data: MutableMap<Downloader.DownloadData, Any>) {
+            createPostDB(data)
+
+//                        NotificationManagerCompat.from(applicationContext).apply {
+//                            builder!!
+//                                .setContentText("Download Complete")
+//                                .setProgress(100, 90, false)
+//                            notify(jobId.toInt(), builder!!.build())
+//                        }
+
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_success),
+                progress = Triple(
+                    first = 0, // max
+                    second = 0F, // progress
+                    third = false // indeterminate
+                )
+            )
+        }
+
+        override fun onError(exception: Exception) {
+            Log.d(TAG, "onError: Download Error")
+            Log.d(TAG, "onError: Exception: $exception")
+            Log.e(TAG, exception.stackTraceToString() )
+
+//                        NotificationManagerCompat.from(applicationContext).apply {
+//                            builder!!.setContentText("An Error Occurred")
+//                                .setProgress(0, 0, false)
+//                            notify(jobId.toInt(), builder!!.build())
+//                        }
+
+            updateNotification(
+                contentText = applicationContext.getString(R.string.notif_error),
+                progress = Triple(
+                    first = 100, // max
+                    second = 0F, // progress
+                    third = false // indeterminate
+                )
+            )
+
+            throw exception
+        }
+    }
 
     override fun doWork(): Result {
         url = inputData.getString("URL")!!
-        appDB = AppDB.getDatabase(applicationContext)
-
         addJobToDB()
 
         try {
-            createNotification()
             Downloader()
                 .setUrl(url)
                 .setContext(applicationContext)
                 .registerObservers { status ->
                     Log.d(TAG, "doWork: $status")
                     updateJobDB(status)
-                }.setDownloaderListener(object : Downloader.DownloaderListener {
-                    override fun onSuccess(data: MutableMap<Downloader.DownloadData, Any>) {
-                        super.onSuccess(data)
-                        createPostDB(data)
-                    }
-
-                    override fun onError(exception: Exception) {
-                        Log.d(TAG, "onError: Download Error")
-                        Log.d(TAG, "onError: Exception: $exception")
-                        super.onError(exception)
-                        NotificationManagerCompat.from(applicationContext).apply {
-                            builder!!.setContentText("An Error Occurred")
-                                .setProgress(0, 0, false)
-                            notify(jobId.toInt(), builder!!.build())
-                        }
-
-                        throw exception
-                    }
-
-                    override fun onDownloadProgressChange(progress: Float) {
-                        super.onDownloadProgressChange(progress)
-
-                        appDB.jobsDao().updateProgress(progress, this@DownloadWorker.url)
-
-                        NotificationManagerCompat.from(applicationContext).apply {
-                            builder!!
-                                .setProgress(100, (progress * 100).toInt(), false)
-                            notify(jobId.toInt(), builder!!.build())
-                        }
-                    }
-
-                    override fun onDownloadEnd() {
-                        Log.d(TAG, "onDownloadEnd: Download End")
-                        super.onDownloadEnd()
-
-                        appDB.jobsDao().updateProgress(1F, this@DownloadWorker.url)
-
-
-                        NotificationManagerCompat.from(applicationContext).apply {
-                            builder!!
-                                .setContentText("Download complete")
-                                .setProgress(0, 0, false)
-                            notify(jobId.toInt(), builder!!.build())
-                        }
-                    }
-
-                    override fun onJsonGrabbed(title: String) {
-                        super.onJsonGrabbed(title)
-                        NotificationManagerCompat.from(applicationContext).apply {
-                            builder!!.setContentTitle(title)
-                            notify(jobId.toInt(), builder!!.build())
-                        }
-                    }
-                })
+                }.setDownloaderListener(downloadListener)
                 .start()
         } catch (exception: Exception) {
             Log.d(TAG, "doWork: Exception ${exception.message}")
@@ -120,7 +204,8 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
         val mimeType = data[Downloader.DownloadData.MIME_TYPE] as String
         if (json is RedditJson) {
             val redditPost = RedditPosts(
-                url = json.url,
+                url = "https://reddit.com" + json.url,
+                permalink = json.url,
                 title = json.title,
                 subreddit = json.subreddit,
                 date = json.createdAt,
@@ -156,13 +241,36 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
         builder = NotificationCompat.Builder(applicationContext, applicationContext.getString(R.string.notification_channel_id)).apply {
             setSmallIcon(R.drawable.ic_notification_icon)
             setContentTitle("Dit")
+            setProgress(100, 0, true)
         }
 
         NotificationManagerCompat.from(applicationContext).apply {
-            builder!!
-                .setProgress(100, 0, true)
-                .setContentText("Download in Progress")
+            notify(jobId.toInt(), builder!!.build())
+        }
+    }
 
+    private fun updateNotification(
+        title: String? = null,
+        contentText: String? = null,
+        progress: Triple<Int, Float?, Boolean>? = null
+    ) {
+        NotificationManagerCompat.from(applicationContext).apply {
+            builder!!.apply {
+                if (title != null) {
+                    setContentTitle(title)
+                }
+
+                if (contentText != null) {
+                    setContentText(contentText)
+                }
+
+                if (progress?.second != null) {
+                    setProgress(progress.first, (progress.second!! * 100).toInt(), progress.third)
+
+                    // Updates database
+                    appDB.jobsDao().updateProgress( (progress.second!! * 100), this@DownloadWorker.url)
+                }
+            }
             notify(jobId.toInt(), builder!!.build())
         }
     }
