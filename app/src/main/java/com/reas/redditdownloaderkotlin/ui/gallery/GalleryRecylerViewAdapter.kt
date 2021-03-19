@@ -1,6 +1,5 @@
 package com.reas.redditdownloaderkotlin.ui.gallery
 
-import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
@@ -14,14 +13,14 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
-import com.reas.redditdownloaderkotlin.database.AppDB
 import com.reas.redditdownloaderkotlin.R
+import com.reas.redditdownloaderkotlin.database.AppDB
 import com.reas.redditdownloaderkotlin.models.AllPosts
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileInputStream
-import java.lang.IllegalArgumentException
+import java.io.FileNotFoundException
 
 private const val TAG = "GalleryRecyclerViewAdapter"
 
@@ -84,10 +83,12 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
         fun bind(post: AllPosts?) {
             val postVar = post?.posts!!
             val fileUri = Uri.parse(postVar.fileUri)
+            if (!fileExists(uri = fileUri, url = postVar.url)) {
+                return
+            }
             Log.d(TAG, "bind: uri: $fileUri")
 
             val filePath = getFilePath(fileUri, mimeType = postVar.mimeType)
-
             val aspectRatio = getAspectRatio(fileUri, mimeType = postVar.mimeType)
             Log.d(TAG, "bind: aspect ratio: $aspectRatio")
 
@@ -103,6 +104,25 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
                 Toast.makeText(itemView.context, Uri.fromFile(File(filePath)).toString(), Toast.LENGTH_SHORT).show()
             }
 
+        }
+
+        private fun fileExists(uri: Uri, url: String): Boolean {
+            return try {
+                itemView.context.contentResolver.openAssetFileDescriptor(uri, "r")?.close()
+                true
+            } catch (e: FileNotFoundException) {
+                handleFileNotFound(url)
+                false
+            }
+        }
+
+        private fun handleFileNotFound(url: String) {
+            scope.launch(Dispatchers.Main) {
+                val db = AppDB.INSTANCE?.postsDao()
+                db?.deleteWithUrl(url)
+                db?.deleteInstagramPostsWithUrl(url)
+                db?.deleteRedditPostsWithUrl(url)
+            }
         }
 
         private fun getFilePath(fileUri: Uri, mimeType: String): String? {
@@ -163,6 +183,8 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             val height: Float
 
             val retriever = MediaMetadataRetriever()
+            Log.d(TAG, "getAspectRatio: context?: ${itemView.context ?: "ISNULL"}")
+            Log.d(TAG, "getAspectRatio: uri: $uri")
             retriever.setDataSource(itemView.context, uri)
             height = retriever.extractMetadata(keyCodes[0]).toFloat()
             width = retriever.extractMetadata(keyCodes[1]).toFloat()
@@ -184,10 +206,14 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
 
     class PostsComparator: DiffUtil.ItemCallback<AllPosts>() {
         override fun areItemsTheSame(oldItem: AllPosts, newItem: AllPosts): Boolean {
+            Log.d(TAG, "areItemsTheSame: old: $oldItem")
+            Log.d(TAG, "areItemsTheSame: new: $newItem")
             return oldItem === newItem
         }
 
         override fun areContentsTheSame(oldItem: AllPosts, newItem: AllPosts): Boolean {
+            Log.d(TAG, "areContentsTheSame: old: $oldItem")
+            Log.d(TAG, "areContentsTheSame: new: $newItem")
             return oldItem == newItem
         }
 
