@@ -2,10 +2,13 @@ package com.reas.redditdownloaderkotlin.util.downloader
 
 enum class JobStatus {
     ADDED_TO_WORKMANAGER,
-    FAILED,
+    START,
     GETTING_JSON_START,
     GETTING_JSON_END,
     MEDIA_DOWNLOAD_START,
     MEDIA_DOWNLOAD_END,
-    SUCCESS
+    PROCESSING_START,
+    PROCESSING_END,
+    SUCCESS,
+    FAILED
 }
