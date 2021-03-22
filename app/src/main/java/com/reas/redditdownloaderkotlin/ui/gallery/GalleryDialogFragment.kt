@@ -4,15 +4,12 @@ import android.app.Dialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.accessibility.AccessibilityManager
 import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.DialogFragment
 import androidx.work.*
-import com.google.android.material.snackbar.BaseTransientBottomBar
-import com.google.android.material.snackbar.Snackbar
 import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.databinding.FragmentGalleryDialogBinding
 import com.reas.redditdownloaderkotlin.util.UrlInputValidator
@@ -20,8 +17,7 @@ import com.reas.redditdownloaderkotlin.util.downloader.DownloadWorker
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+private const val ARG_URL = "url"
 
 /**
  * A simple [Fragment] subclass.
@@ -32,9 +28,10 @@ private const val ARG_PARAM2 = "param2"
 private const val TAG = "GalleryDialogFragment"
 
 class GalleryDialogFragment() : DialogFragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    interface GalleryDialogFragmentListener {
+        fun onFragmentDetach()
+    }
+    private var listener: GalleryDialogFragmentListener? = null
 
     private var _binding: FragmentGalleryDialogBinding? = null
     // This property is only valid between onCreateView and
@@ -42,10 +39,6 @@ class GalleryDialogFragment() : DialogFragment() {
     private val binding get() = _binding!!
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
         _binding = FragmentGalleryDialogBinding.inflate(LayoutInflater.from(requireContext()))
         val view = binding.root
 
@@ -58,6 +51,11 @@ class GalleryDialogFragment() : DialogFragment() {
         binding.urlInput.doOnTextChanged { text, _, _, _ ->
             validator.validate(text.toString())
             Log.d(TAG, text.toString())
+        }
+
+        arguments?.let {
+            val url = it.getString(ARG_URL)
+            binding.urlInput.setText(url)
         }
 
         binding.downloadButton.setOnClickListener {
@@ -105,15 +103,20 @@ class GalleryDialogFragment() : DialogFragment() {
         _binding = null
     }
 
+    override fun onDetach() {
+        listener?.onFragmentDetach()
+        super.onDetach()
+    }
+
     companion object {
         @JvmStatic
         val instance = GalleryDialogFragment()
-        fun instance(param1: String, param2: String) =
+        fun instance(url: String, listenerIn: GalleryDialogFragmentListener?) =
             GalleryDialogFragment().apply {
                 arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+                    putString(ARG_URL, url)
                 }
+                listener = listenerIn
             }
     }
 }
