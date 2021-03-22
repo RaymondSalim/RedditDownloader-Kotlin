@@ -154,12 +154,19 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 
             val shareIntent = Intent().apply {
                 action = Intent.ACTION_SEND
-                type = "image/* video/*"
                 putExtra(Intent.EXTRA_STREAM, fileUri)
+                type = "image/* video/*"
             }
 
             Log.d(TAG, "intent: ID: ${jobId.toInt()}")
             val sharePendingIntent = PendingIntent.getBroadcast(appContext, jobId.toInt(), Intent.createChooser(shareIntent, fileName), PendingIntent.FLAG_UPDATE_CURRENT)
+            NotificationManagerCompat.from(applicationContext).apply {
+                builder!!.apply {
+                    addAction(0, "Share", sharePendingIntent)
+                }
+            }
+
+
 
             updateNotification(
                 contentText = applicationContext.getString(R.string.notif_success),
@@ -168,13 +175,13 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
                     second = 0F, // progress
                     third = false // indeterminate
                 ),
-                actions = arrayOf(
+                /*actions = arrayOf(
                     Triple(
                         first = 0, // Icon
                         second = appContext.getString(R.string.notif_actions_share), // Text
                         third = sharePendingIntent // PendingIntent
                     )
-                ),
+                ),*/
                 ongoing = false
             )
         }

@@ -116,7 +116,10 @@ class GalleryFragment : Fragment() {
         }
 
         binding.fab.setOnClickListener {
-            GalleryDialogFragment.instance.show(childFragmentManager, R.id.gallery_dialog_fragment.toString())
+            val frag = GalleryDialogFragment.instance
+            if (!frag.isAdded) {
+                frag.show(childFragmentManager, R.id.gallery_dialog_fragment.toString())
+            }
         }
 
         return view
