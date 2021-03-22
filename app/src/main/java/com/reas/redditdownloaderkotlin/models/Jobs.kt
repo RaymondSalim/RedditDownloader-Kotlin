@@ -20,7 +20,8 @@ data class Jobs(
     @ColumnInfo(name = "url") val url: String,
     @ColumnInfo(name = "progress_percentage") var progressPercentage: Float = 0F, // value between 0 to 1 inclusive
     @ColumnInfo(name = "status") var status: JobStatus,
-    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis()
+    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "retry_count") var retryCount: Int = 0
 ) {
     @PrimaryKey(autoGenerate = true) var id: Int = 0
 }
