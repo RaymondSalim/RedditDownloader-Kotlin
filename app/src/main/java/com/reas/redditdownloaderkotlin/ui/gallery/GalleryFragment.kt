@@ -127,7 +127,6 @@ class GalleryFragment : Fragment() {
         _binding = null
     }
 
-
     private fun checkReadWritePermission() {
         var granted: Boolean = false
         val permissions = arrayOf(
