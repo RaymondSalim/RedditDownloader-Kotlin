@@ -2,7 +2,10 @@ package com.reas.redditdownloaderkotlin.util.downloader
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -16,6 +19,7 @@ import com.reas.redditdownloaderkotlin.models.Jobs
 import com.reas.redditdownloaderkotlin.models.Posts
 import com.reas.redditdownloaderkotlin.models.PostsPlatform
 import com.reas.redditdownloaderkotlin.models.RedditPosts
+import com.reas.redditdownloaderkotlin.ui.main.MainActivity
 import com.reas.redditdownloaderkotlin.util.downloader.reddit.RedditJson
 
 private const val TAG = "DownloadWorker"
@@ -38,7 +42,7 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 
         override fun onJsonGrabStart() {
             updateNotification(
-                contentText = "Retrieving Post Information",
+                contentText = applicationContext.getString(R.string.notif_post_info_get),
             )
         }
 
@@ -49,7 +53,7 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
             }
 
             updateNotification(
-                contentText = applicationContext.getString(R.string.notif_post_info_get),
+                contentText = applicationContext.getString(R.string.notif_post_info_success),
                 progress = Triple(
                     first = 100, // max
                     second = 0.05F, // progress
@@ -136,6 +140,26 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 //                                .setProgress(100, 90, false)
 //                            notify(jobId.toInt(), builder!!.build())
 //                        }
+            val fileUri = Uri.parse(data[Downloader.DownloadData.FILE_URI] as String)
+            Log.d(TAG, "intent: URI: $fileUri")
+            val fileName: String
+
+            val json = data[Downloader.DownloadData.BASE_JSON]
+
+            fileName = if (json is RedditJson) {
+                json.title
+            } else {
+                "" // TODO
+            }
+
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "image/* video/*"
+                putExtra(Intent.EXTRA_STREAM, fileUri)
+            }
+
+            Log.d(TAG, "intent: ID: ${jobId.toInt()}")
+            val sharePendingIntent = PendingIntent.getBroadcast(appContext, jobId.toInt(), Intent.createChooser(shareIntent, fileName), PendingIntent.FLAG_UPDATE_CURRENT)
 
             updateNotification(
                 contentText = applicationContext.getString(R.string.notif_success),
@@ -143,7 +167,15 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
                     first = 0, // max
                     second = 0F, // progress
                     third = false // indeterminate
-                )
+                ),
+                actions = arrayOf(
+                    Triple(
+                        first = 0, // Icon
+                        second = appContext.getString(R.string.notif_actions_share), // Text
+                        third = sharePendingIntent // PendingIntent
+                    )
+                ),
+                ongoing = false
             )
         }
 
@@ -164,7 +196,8 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
                     first = 100, // max
                     second = 0F, // progress
                     third = false // indeterminate
-                )
+                ),
+                ongoing = false
             )
 
             throw exception
@@ -238,10 +271,19 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 
     private fun createNotification() {
         createNotificationChannel()
+
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+
+        val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, 0)
+
         builder = NotificationCompat.Builder(applicationContext, applicationContext.getString(R.string.notification_channel_id)).apply {
             setSmallIcon(R.drawable.ic_notification_icon)
             setContentTitle("Dit")
+            setContentIntent(pendingIntent)
             setProgress(100, 0, true)
+            setOngoing(true)
         }
 
         NotificationManagerCompat.from(applicationContext).apply {
@@ -252,7 +294,9 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
     private fun updateNotification(
         title: String? = null,
         contentText: String? = null,
-        progress: Triple<Int, Float?, Boolean>? = null
+        progress: Triple<Int, Float?, Boolean>? = null,
+        actions: Array<Triple<Int, CharSequence, PendingIntent>>? = null,
+        ongoing: Boolean? = null
     ) {
         NotificationManagerCompat.from(applicationContext).apply {
             builder!!.apply {
@@ -269,6 +313,14 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 
                     // Updates database
                     appDB.jobsDao().updateProgress( (progress.second!! * 100), this@DownloadWorker.url)
+                }
+
+                actions?.forEach {
+                    this.addAction(it.first, it.second, it.third)
+                }
+
+                if (ongoing != null) {
+                    setOngoing(ongoing)
                 }
             }
             notify(jobId.toInt(), builder!!.build())
