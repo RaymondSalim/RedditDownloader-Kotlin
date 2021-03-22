@@ -41,6 +41,7 @@
     <string name="notif_media_process_complete">Processing completed</string>
     <string name="notif_success">Post downloaded</string>
     <string name="notif_error">An error has occurred</string>
+    <string name="notif_actions_share">Share</string>
 
     <!-- Preference Titles -->
     <string name="general_header">General</string>ad
