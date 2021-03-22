@@ -125,8 +125,9 @@ class Downloader() {
                 return getInstagramJsonUrl()
             }
         }
-
-        throw Exception("URL is not a valid reddit/instagram post")
+        val exception = Exception("URL is not a valid reddit/instagram post")
+        listener?.onError(exception)
+        throw exception
     }
 
     private fun getRedditJsonUrl(): String {
@@ -173,7 +174,6 @@ class Downloader() {
         }
         
         val streamDestination: StreamDestinationCallback = { response, request ->
-            Log.d(TAG, "downloadFromMediaUrl: StreamDestination")
             val fileName = generateFileName(extension = getFileExtension(response), prefix = if (isReddit) "REDDIT_" else "INSTAGRAM_")
 
             do {
@@ -277,7 +277,6 @@ class Downloader() {
         }
 
         val progressCallback: ProgressCallback = { readBytes, totalBytes ->
-            Log.d(TAG, "downloadFromMediaUrl: $totalBytes")
             listener?.onDownloadProgressChange(readBytes / totalBytes.toFloat() )
         }
         val (request, response, result) = Fuel.download(urlIn)
@@ -545,6 +544,7 @@ class Downloader() {
 
                     val redditMediaUrl = RedditMediaUrl(JSONObject(post))
                     redditJson.mediaUrl = redditMediaUrl.getUrl()
+                    Log.d(TAG, "getPageJson: url: ${redditJson.mediaUrl}")
                     this.isVRedditGif = redditMediaUrl.isGif()
                     this.baseJSON = redditJson
 
