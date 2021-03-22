@@ -1,5 +1,6 @@
 package com.reas.redditdownloaderkotlin.ui.gallery
 
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
@@ -21,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileNotFoundException
+import java.lang.Exception
 
 private const val TAG = "GalleryRecyclerViewAdapter"
 
@@ -88,12 +90,12 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             }
             Log.d(TAG, "bind: uri: $fileUri")
 
-            val filePath = getFilePath(fileUri, mimeType = postVar.mimeType)
             val aspectRatio = getAspectRatio(fileUri, mimeType = postVar.mimeType)
+            val filePath = getFilePath(fileUri, mimeType = postVar.mimeType, url = postVar.url) ?: return
             Log.d(TAG, "bind: aspect ratio: $aspectRatio")
 
             draweeView.controller = Fresco.newDraweeControllerBuilder()
-                .setUri(Uri.fromFile(File(filePath!!)))
+                .setUri(Uri.fromFile(File(filePath)))
                 .setAutoPlayAnimations(true)
                 .build()
             draweeView.aspectRatio = aspectRatio
@@ -125,7 +127,8 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             }
         }
 
-        private fun getFilePath(fileUri: Uri, mimeType: String): String? {
+        private fun getFilePath(fileUri: Uri, mimeType: String, url: String): String? {
+            var path: String? = null
             val id = fileUri.toString().substringAfterLast("/")
             Log.d(TAG, "getFilePath: $id")
 
@@ -159,13 +162,22 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
                 Log.d(TAG, "getFilePath: ${cursor.count}")
                 while (cursor.moveToNext()) {
                     val bucket = cursor.getColumnIndex(projection[0])
-                    return cursor.getString(bucket)
+                    path = cursor.getString(bucket)
+                    Log.d(TAG, "getFilePath: string: ${cursor.getString(bucket)}")
                 }
+                cursor.close()
+                Log.d(TAG, "getFilePath: path: $path")
+                return path
             }
             return null // TODO Support for < API 29
         }
 
         private fun getAspectRatio(uri: Uri, mimeType: String): Float {
+            // MediaMetadataRetriever doesn't support gif
+            if (mimeType.contains("gif")) {
+                return getAspectRatioBitmapFactory(uri)
+            }
+
             val keyCodes =
                 if (mimeType.contains("video")) {
                     arrayOf(
@@ -179,6 +191,7 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
                     )
                 }
 
+
             val width: Float
             val height: Float
 
@@ -186,6 +199,8 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             Log.d(TAG, "getAspectRatio: context?: ${itemView.context ?: "ISNULL"}")
             Log.d(TAG, "getAspectRatio: uri: $uri")
             retriever.setDataSource(itemView.context, uri)
+            val name = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+            Log.d(TAG, "getAspectRatio: name: $name")
             height = retriever.extractMetadata(keyCodes[0]).toFloat()
             width = retriever.extractMetadata(keyCodes[1]).toFloat()
 
@@ -193,6 +208,16 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             Log.d(TAG, "getAspectRatio: $height")
             return width / height
 
+        }
+
+        private fun getAspectRatioBitmapFactory(uri: Uri): Float {
+            val options = BitmapFactory.Options()
+            options.inJustDecodeBounds = true
+
+            val afd = itemView.context.contentResolver.openAssetFileDescriptor(uri, "r")
+
+            BitmapFactory.decodeFileDescriptor(afd?.fileDescriptor, null, options)
+            return options.outWidth.toFloat() / options.outHeight.toFloat()
         }
 
         companion object {
