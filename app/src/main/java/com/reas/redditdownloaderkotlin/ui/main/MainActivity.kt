@@ -69,7 +69,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        supportFragmentManager.putFragment(outState, "lastFragment", lastFragment)
+        if (lastFragment.isAdded) {
+            supportFragmentManager.putFragment(outState, "lastFragment", lastFragment)
+        }
         Log.d(TAG, "onSaveInstanceState: Saving")
         super.onSaveInstanceState(outState)
     }
