@@ -9,6 +9,8 @@
         <item name="snackbarStyle">@style/SnackBarStyle</item>
         <item name="snackbarButtonStyle">@style/Widget.MaterialComponents.Button.TextButton.Snackbar</item>
         <item name="snackbarTextViewStyle">@style/Widget.MaterialComponents.Snackbar.TextView</item>
+
+        <item name="searchViewStyle">@style/SearchViewStyle</item>
     </style>
 
     <style name="RoundedCornersDialog" parent="@style/Theme.MaterialComponents.DayNight.Dialog">
@@ -26,6 +28,10 @@
         <item name="android:layout_margin">@dimen/bottomNavBarMargin</item>
         <item name="android:background">#FFFFFF</item>
         <item name="android:maxWidth">50px</item>
+    </style>
+
+    <style name="SearchViewStyle" parent="@style/Widget.AppCompat.SearchView">
+        <item name="queryHint">@string/search_hint</item>
     </style>
 
     <style name="WindowAnimationTransition">

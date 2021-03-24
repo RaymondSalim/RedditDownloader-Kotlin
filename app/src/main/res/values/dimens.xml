@@ -3,4 +3,7 @@
     <dimen name="dialogCornerRadius">16dp</dimen>
     <dimen name="bottomNavBarMargin">16dp</dimen>
 
+
+    <dimen name="recyclerview_item_padding">2dp</dimen>
+    <dimen name="recyclerview_item_padding_selected">14dp</dimen>
 </resources>
