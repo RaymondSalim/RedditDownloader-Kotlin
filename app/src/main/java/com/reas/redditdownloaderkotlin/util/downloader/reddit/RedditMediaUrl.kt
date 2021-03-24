@@ -1,9 +1,19 @@
 package com.reas.redditdownloaderkotlin.util.downloader.reddit
 
+import android.util.Log
 import org.json.JSONObject
 
-class RedditMediaUrl(private val postData: JSONObject) {
+private const val TAG = "RedditMediaUrl"
+
+class RedditMediaUrl(private var postData: JSONObject) {
     fun getUrl(): String {
+        Log.d(TAG, "getUrl: $postData")
+        // Checks if reddit post is a crosspost
+        postData.optJSONArray("crosspost_parent_list")?.let {
+            Log.d(TAG, "getUrl: crosspost")
+            this.postData = it.getJSONObject(0)
+        }
+
         val domain = postData.getString("domain")
 
         with(domain) {
