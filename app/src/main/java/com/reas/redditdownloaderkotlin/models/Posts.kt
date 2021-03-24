@@ -22,7 +22,9 @@ data class Posts(
     @ColumnInfo(name = "downloaded_at") val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "file_uri") val fileUri: String?,
     @ColumnInfo(name = "mime_type") val mimeType: String,
-    @ColumnInfo(name = "platform") val platform: PostsPlatform // Instagram or Reddit
+    @ColumnInfo(name = "platform") val platform: PostsPlatform, // Instagram or Reddit
+    @ColumnInfo(name = "height") val height: Int,
+    @ColumnInfo(name = "width") val width: Int,
 )
 
 enum class PostsPlatform {
