@@ -1,31 +1,33 @@
 package com.reas.redditdownloaderkotlin.ui.gallery
 
 import android.Manifest
-import android.animation.ObjectAnimator
 import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Rect
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.*
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.widget.Toast
+import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.marginBottom
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.reas.redditdownloaderkotlin.PostsViewModel
-import com.reas.redditdownloaderkotlin.PostsViewModelFactory
+import com.reas.redditdownloaderkotlin.GalleryViewModel
+import com.reas.redditdownloaderkotlin.GalleryViewModelFactory
 import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.RedditDownloaderApplication
 import com.reas.redditdownloaderkotlin.databinding.FragmentGalleryBinding
+import com.reas.redditdownloaderkotlin.models.AllPosts
+import java.util.ArrayList
+import java.util.stream.Collectors
 
 /**
  * A simple [Fragment] subclass.
@@ -35,14 +37,70 @@ import com.reas.redditdownloaderkotlin.databinding.FragmentGalleryBinding
 
 private const val TAG = "GalleryFragment"
 
-class GalleryFragment : Fragment() {
+class GalleryFragment : Fragment(), SearchView.OnQueryTextListener {
     private var _binding: FragmentGalleryBinding? = null
+
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
 
-    private val postsViewModel: PostsViewModel by viewModels {
-        PostsViewModelFactory((this.requireActivity().application as RedditDownloaderApplication).repository)
+    private var mActionMode: ActionMode? = null
+
+    private val actionModeCallback: ActionMode.Callback = object : ActionMode.Callback {
+        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+            val inflater = mode?.menuInflater
+            inflater?.inflate(R.menu.gallery_contextbar, menu)
+            return true
+        }
+
+        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean = false
+
+        override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+            when (item?.itemId) {
+                R.id.share -> {
+                    val data = (binding.postRecyclerview.adapter as GalleryRecyclerViewAdapter).getSelectedPosts()
+                    Log.d(TAG, "onActionItemClicked: selectedPost size: ${data.size}")
+                    val multipleData: Boolean = data.size > 1
+                    val shareIntent = Intent().apply {
+                        type = "image/* video/*"
+
+                        if (multipleData) {
+                            val uriList = data.toList().stream().map {
+                                Uri.parse(it.second.posts.fileUri)
+                            }.collect(
+                                Collectors.toList()
+                            ) as ArrayList
+
+                            action = Intent.ACTION_SEND_MULTIPLE
+                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uriList)
+                        } else {
+                            val key = data.keys.first()
+                            Log.d(TAG, "onActionItemClicked: ${data}")
+                            Log.d(TAG, "onActionItemClicked: ${data[key]}")
+                            val uri = Uri.parse(data[key]?.posts?.fileUri)
+
+                            action = Intent.ACTION_SEND
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                        }
+                    }
+
+
+                    startActivity(Intent.createChooser(shareIntent, "Share media to.."))
+                }
+            }
+            return true
+        }
+
+        override fun onDestroyActionMode(mode: ActionMode?) {
+            Log.d(TAG, "onDestroyActionMode: ")
+            (binding.postRecyclerview.adapter as GalleryRecyclerViewAdapter).clearSelectedPosts()
+
+            mActionMode = null
+        }
+    }
+
+    private val galleryViewModel: GalleryViewModel by viewModels {
+        GalleryViewModelFactory((this.requireActivity().application as RedditDownloaderApplication).repository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,41 +124,40 @@ class GalleryFragment : Fragment() {
         _binding = FragmentGalleryBinding.inflate(inflater, container, false)
         val view = binding.root
 
-//        binding.postRecyclerview.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-//            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-//                super.onScrolled(recyclerView, dx, dy)
-//                var bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_nav)
-//                val rect = Rect()
-//                bottomNav.getGlobalVisibleRect(rect)
-//
-//                var translateBy: Int
-//
-//                if (dy > 0) {
-//                    translateBy = rect.top
-//
-//                } else {
-//                    translateBy = 0
-//                }
-//
-//                Log.d("Scroll", "onScrolled dy: $dy")
-//                Log.d("Scroll", "onScrolled translateBy: $translateBy")
-//
-//                ObjectAnimator.ofFloat(bottomNav, "translationY", translateBy.toFloat()).apply {
-//                    duration = 500
-//                    start()
-//                }
-//            }
-//
-//        })
+        val adapter = GalleryRecyclerViewAdapter(viewLifecycleOwner.lifecycleScope).apply {
+            setListener(object: GalleryRecyclerViewAdapter.AdapterInterface {
+                override fun onItemChanged(selectedPost: MutableMap<Int, AllPosts>) {
+                    galleryViewModel.recyclerViewSelectedPosts.value = selectedPost
+                }
 
-        val adapter = GalleryRecylerViewAdapter(viewLifecycleOwner.lifecycleScope)
+            })
+        }
         binding.postRecyclerview.adapter = adapter
         binding.postRecyclerview.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
 
-        // Posts Livedata observer
-        postsViewModel.allPosts.observe(this.requireActivity(), Observer { posts ->
-            posts?.let { adapter.submitList(it) }
-        })
+
+        galleryViewModel.apply GVM@{
+            with (this@GalleryFragment.requireActivity()) Activity@{
+                // Posts Livedata observer
+                allPosts.observe(this@Activity, { posts ->
+                    posts?.let { adapter.submitList(it) }
+                })
+
+                // SelectedPosts recyclerview Livedata observer
+                recyclerViewSelectedPosts.observe(this@Activity, {
+                    if (it.isNotEmpty()) {
+                        if (mActionMode == null) {
+                            mActionMode = this@Activity.startActionMode(actionModeCallback)
+                        }
+
+                        mActionMode?.title = "${it.size} selected"
+
+                    } else {
+                        mActionMode?.finish()
+                    }
+                })
+            }
+        }
 
 
         val bottomNavBar = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_nav)
@@ -111,7 +168,12 @@ class GalleryFragment : Fragment() {
 
             Log.d(TAG, "onCreateView: navbar height${bottomNavBar.measuredHeight}")
 
-            layoutView.setMargins(layoutView.leftMargin, layoutView.topMargin, layoutView.rightMargin, bottomNavBar.height + bottomNavBar.marginBottom*2)
+            layoutView.setMargins(
+                layoutView.leftMargin,
+                layoutView.topMargin,
+                layoutView.rightMargin,
+                bottomNavBar.height + bottomNavBar.marginBottom * 2
+            )
             fab.requestLayout()
         }
 
@@ -123,6 +185,11 @@ class GalleryFragment : Fragment() {
         }
 
         return view
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        Log.d(TAG, "onOptionsItemSelected: ${item.itemId}")
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onDestroyView() {
@@ -139,7 +206,7 @@ class GalleryFragment : Fragment() {
         permissions.forEach { el ->
             val response = ContextCompat.checkSelfPermission(requireActivity(), el)
             granted = response == PackageManager.PERMISSION_GRANTED
-            }
+        }
 
         val READ_EXTERNAL_STORAGE_REQUEST = 5
         // TODO Tell user why we need permission
@@ -151,6 +218,16 @@ class GalleryFragment : Fragment() {
             )
         }
 
+    }
+
+    override fun onQueryTextSubmit(query: String?): Boolean {
+        Toast.makeText(requireContext(), "query ${query}", Toast.LENGTH_SHORT).show()
+        return true
+    }
+
+    override fun onQueryTextChange(newText: String?): Boolean {
+        Toast.makeText(requireContext(), "newtext ${newText}", Toast.LENGTH_SHORT).show()
+        return true
     }
 
     companion object {

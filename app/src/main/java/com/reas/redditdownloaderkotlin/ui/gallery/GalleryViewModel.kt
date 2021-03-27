@@ -8,8 +8,14 @@ import com.reas.redditdownloaderkotlin.models.RedditPosts
 import com.reas.redditdownloaderkotlin.repository.PostsRepository
 import kotlinx.coroutines.launch
 
-class PostsViewModel(private val repository: PostsRepository) : ViewModel() {
-    val allPosts: LiveData<List<AllPosts>> = repository.allPosts.asLiveData()
+class GalleryViewModel(private val repository: PostsRepository) : ViewModel() {
+    private val _allPosts = repository.allPosts.asLiveData()
+    val allPosts = _allPosts
+
+    val recyclerViewSelectedPosts: MutableLiveData<MutableMap<Int, AllPosts>> by lazy {
+        MutableLiveData<MutableMap<Int, AllPosts>>()
+    }
+
 
     fun insert(post: Posts, redditPosts: RedditPosts) = viewModelScope.launch {
         repository.insert(post, redditPosts)
@@ -20,11 +26,11 @@ class PostsViewModel(private val repository: PostsRepository) : ViewModel() {
     }
 }
 
-class PostsViewModelFactory(private val repository: PostsRepository): ViewModelProvider.Factory {
+class GalleryViewModelFactory(private val repository: PostsRepository): ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(PostsViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(GalleryViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return PostsViewModel(repository) as T
+            return GalleryViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel Class")
     }

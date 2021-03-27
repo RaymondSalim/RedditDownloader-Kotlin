@@ -10,6 +10,10 @@
     <string name="next">Next</string>
     <string name="done">Done</string>
     <string name="cancel">Cancel</string>
+    <string name="share">Share</string>
+    <string name="delete">Delete</string>
+    <string name="rename">Rename</string>
+    <string name="more">More</string>
 
 
     <!--String for splash screen-->
