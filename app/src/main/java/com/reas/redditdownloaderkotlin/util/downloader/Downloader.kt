@@ -22,10 +22,8 @@ import java.io.*
 import kotlin.NullPointerException
 import android.content.res.AssetFileDescriptor
 import android.database.sqlite.SQLiteConstraintException
-import android.media.MediaCodec
-import android.media.MediaExtractor
-import android.media.MediaFormat
-import android.media.MediaMuxer
+import android.graphics.BitmapFactory
+import android.media.*
 import android.os.ParcelFileDescriptor
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.ProgressCallback
@@ -69,7 +67,7 @@ class Downloader() {
         fun onProcessingStart()
         fun onProcessingEnd()
         fun onSuccess(data: MutableMap<DownloadData, Any>)
-        fun onError(exception: Exception)
+        fun onError(exception: Exception, displayError: Boolean = false)
     }
 
     private var observers = mutableListOf<Observer>()
@@ -85,6 +83,8 @@ class Downloader() {
     private var mimeType: String? = null
     private var mediaIsImage: Boolean? = null
     private var isVRedditGif = false
+    private var height: Int? = null
+    private var width: Int? = null
 
     fun registerObservers(observer: Observer): Downloader {
         observers.add(observer)
@@ -126,7 +126,7 @@ class Downloader() {
             }
         }
         val exception = Exception("URL is not a valid reddit/instagram post")
-        listener?.onError(exception)
+        listener?.onError(exception, displayError = true)
         throw exception
     }
 
@@ -145,7 +145,7 @@ class Downloader() {
     private fun getMediaUrl(): String {
         if (isReddit) {
             var url = (this.baseJSON as RedditJson).mediaUrl
-
+            Log.d(TAG, "getMediaUrl: $url")
             // Replaces imgur .gifv to .mp4
             if (url.contains("imgur") && url.contains("gifv")) {
                 url = url.replace(".gifv", ".mp4")
@@ -174,7 +174,7 @@ class Downloader() {
         }
         
         val streamDestination: StreamDestinationCallback = { response, request ->
-            val fileName = generateFileName(extension = getFileExtension(response), prefix = if (isReddit) "REDDIT_" else "INSTAGRAM_")
+            val fileName = generateFileName(extension = getFileExtension(response))
 
             do {
                 try {
@@ -197,23 +197,27 @@ class Downloader() {
                 Log.d(TAG, "downloadFromMediaUrl: success")
                 listener?.onDownloadEnd()
                 updateStatus(JobStatus.MEDIA_DOWNLOAD_END)
-
-                // No processing needed, so onProcessingStart() is skipped
-                listener?.onProcessingEnd()
-                updateStatus(JobStatus.PROCESSING_END)
             }
 
             is Result.Failure -> {
                 Log.d(TAG, "downloadFromMediaUrl: failed")
                 updateStatus(JobStatus.FAILED)
                 listener?.onError(result.getException())
+                throw result.getException()
             }
         }
 
+        listener?.onProcessingStart()
+        updateStatus(JobStatus.PROCESSING_START)
+
+        getWidthAndHeight(mediaUri = this.fileUri)
+
+        listener?.onProcessingEnd()
+        updateStatus(JobStatus.PROCESSING_END)
     }
 
-    private fun generateFileName(extension: String, prefix: String): String {
-        return "${prefix}_${getFileName()}_${LocalDateTime.now()}.$extension"
+    private fun generateFileName(extension: String): String {
+        return "${getFileName()}_${LocalDateTime.now()}.$extension"
     }
 
     private fun removeMediaStorePendingStatus() {
@@ -231,7 +235,7 @@ class Downloader() {
      */
     private fun downloadVRedditMedia(urlIn: String) {
         this.mimeType = "video/mp4"
-        val fileName = generateFileName(extension = "mp4", prefix = "REDDIT_")
+        val fileName = generateFileName(extension = "mp4")
         var outputStream: OutputStream? = null
 
         do {
@@ -403,8 +407,12 @@ class Downloader() {
                 }
             }
 
+            getWidthAndHeight(videoMediaFormat = videoMedFormat)
+
             muxer.stop()
             muxer.release()
+            videoMedEx.release()
+            audioMedEx?.release()
         } catch (fileNotFound: FileNotFoundException) {
 
         } catch (exception: Exception) {
@@ -422,6 +430,56 @@ class Downloader() {
 
         listener?.onProcessingEnd()
         updateStatus(JobStatus.PROCESSING_END)
+    }
+
+    private fun getWidthAndHeight(videoMediaFormat: MediaFormat? = null, mediaUri: Uri? = null) {
+        var width = 0
+        var height = 0
+
+        videoMediaFormat?.let { format ->
+            width = format.getInteger(MediaFormat.KEY_WIDTH)
+            height = format.getInteger(MediaFormat.KEY_HEIGHT)
+            with (format) {
+                if (containsKey("crop-left") && containsKey("crop-right")) {
+                    width = getInteger("crop-right") + 1 - getInteger("crop-left")
+                }
+
+                if (containsKey("crop-top") && containsKey("crop-bottom")) {
+                    height = getInteger("crop-bottom") + 1 - getInteger("crop-top")
+                }
+            }
+        }
+
+        mediaUri?.let { uri ->
+            if (this.mimeType!!.contains("image")) {
+
+                val options = BitmapFactory.Options()
+                options.inJustDecodeBounds = true
+
+                val afd = appContext?.contentResolver?.openAssetFileDescriptor(uri, "r")
+
+                BitmapFactory.decodeFileDescriptor(afd?.fileDescriptor, null, options)
+
+                width = options.outWidth
+                height = options.outHeight
+            } else {
+                val keyCodes =
+                    arrayOf(
+                        MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+                        MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH
+                    )
+
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(appContext, uri)
+                height = retriever.extractMetadata(keyCodes[0]).toInt()
+                width = retriever.extractMetadata(keyCodes[1]).toInt()
+            }
+        }
+
+
+        Log.d(TAG, "getWidthAndHeight: Height: ${height} Width: ${width}")
+        this.width = width
+        this.height = height
     }
 
     private fun copyStreamToFile(inputStream: InputStream, file: File) {
@@ -550,6 +608,7 @@ class Downloader() {
 
                     listener?.onJsonGrabEnd(title = redditJson.title)
                     updateStatus(JobStatus.GETTING_JSON_END)
+                    Log.d(TAG, "getPageJson: END")
                     return this.baseJSON as RedditJson
                 }
                 // Is instagram
@@ -596,7 +655,8 @@ class Downloader() {
             mutableMapOf(
                 DownloadData.BASE_JSON to this.baseJSON!!,
                 DownloadData.FILE_URI to this.fileUri.toString(),
-                DownloadData.MIME_TYPE to this.mimeType!!
+                DownloadData.MIME_TYPE to this.mimeType!!,
+                DownloadData.WIDTH_HEIGHT to Pair(this.width!!, this.height!!),
             )
         )
         updateStatus(JobStatus.SUCCESS)
@@ -633,8 +693,8 @@ class Downloader() {
     enum class DownloadData {
         BASE_JSON,
         FILE_URI,
-        MIME_TYPE
-
+        MIME_TYPE,
+        WIDTH_HEIGHT
     }
 
 

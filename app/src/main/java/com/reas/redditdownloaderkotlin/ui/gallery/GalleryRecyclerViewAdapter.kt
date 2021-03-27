@@ -1,14 +1,16 @@
 package com.reas.redditdownloaderkotlin.ui.gallery
 
+import android.animation.ValueAnimator
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import android.widget.CheckBox
+import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.core.view.setPadding
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -22,67 +24,80 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileNotFoundException
-import java.lang.Exception
 
 private const val TAG = "GalleryRecyclerViewAdapter"
 
-class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts, GalleryRecylerViewAdapter.PostsViewHolder>(PostsComparator()) {
+class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter<AllPosts, GalleryRecyclerViewAdapter.PostsViewHolder>(PostsComparator()) {
+    private val selectedPosts = mutableMapOf<Int, AllPosts>()
+
+    private var listener: AdapterInterface? = null
+
+    interface AdapterInterface {
+        fun onItemChanged(selectedPost: MutableMap<Int, AllPosts>)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostsViewHolder {
-        return PostsViewHolder.create(parent, scope)
+        return PostsViewHolder(parent, scope)
     }
 
     override fun onBindViewHolder(holder: PostsViewHolder, position: Int) {
         val current = getItem(position)
-        holder.bind(current)
+        val isSelected = selectedPosts[position] == getItem(position)
+        holder.bind(current, selected = isSelected)
     }
 
-    class PostsViewHolder(itemView: View, val scope: CoroutineScope): RecyclerView.ViewHolder(itemView) {
-        private val draweeView:SimpleDraweeView = itemView.findViewById(R.id.draweeView)
+    fun setListener(adapterInterface: AdapterInterface) {
+        this.listener = adapterInterface
+    }
 
-//        fun bind(post: AllPosts?) {
-//            val fileUri = post?.posts?.fileUri
-//            Log.d(TAG, "bind: $fileUri")
-//            val abs = File(Uri.decode(fileUri))
-//
-//
-//            /**
-//             * Checks if file exists
-//             *   - Exists:
-//             *      - Setup DraweeController
-//             *      - Sets draweeView aspect ratio based on file
-//             *   - Does not exists:
-//             *      - Sets draweeView aspect ratio to 1
-//             */
-//            if (abs.exists()) {
-//                draweeView.controller = Fresco.newDraweeControllerBuilder()
-//                    .setUri("file://" + abs.path)
-//                    .setAutoPlayAnimations(true)
-//                    .build()
-//                try {
-//                    draweeView.aspectRatio = getAspectRatio(abs)
-//                } catch (e: IllegalArgumentException) {
-//                    if (abs.exists()) {
-//                        bind(post)
-//                    } else {
-//                        // TODO REMOVE FILE FROM DATABASE
-//                        scope.launch {
-//                            val db =
-//                                AppDB.getDatabase(itemView.context, scope = scope).postsDao().deleteWithUrl(
-//                                    post?.posts?.url!!
-//                                )
-//                        }
-//                    }
-//                }
-//            } else {
-//                draweeView.aspectRatio = 1F
-//            }
-//
-//
-//
-//        }
+    fun clearSelectedPosts() {
+        val iterator = this.selectedPosts.iterator()
+        while (iterator.hasNext()) {
+            notifyItemChanged(iterator.next().key)
+            iterator.remove()
+        }
+    }
 
-        fun bind(post: AllPosts?) {
+    fun getSelectedPosts(): MutableMap<Int, AllPosts> {
+        return this.selectedPosts
+    }
+
+    inner class PostsViewHolder(itemView: View, private val scope: CoroutineScope): RecyclerView.ViewHolder(itemView) {
+        constructor(parent: ViewGroup, scope: CoroutineScope): this(
+            LayoutInflater.from(parent.context)
+            .inflate(R.layout.recyclerview_post_items, parent, false),
+            scope
+        )
+
+        private val draweeView:SimpleDraweeView = itemView.findViewById(R.id.drawee_view)
+
+        private fun toggleSelectedItem(post: AllPosts, isAdded: Boolean) {
+            val layout = itemView.findViewById<RelativeLayout>(R.id.recycler_view_layout)
+            val checkBox = itemView.findViewById<CheckBox>(R.id.recycler_view_checkbox)
+
+            val currPadding = layout.paddingLeft
+            val newPadding: Int
+
+            if (isAdded) {
+                newPadding = itemView.context.resources.getDimension(R.dimen.recyclerview_item_padding_selected).toInt()
+                checkBox.visibility = View.VISIBLE
+            } else {
+                newPadding = 0
+                checkBox.visibility = View.INVISIBLE
+            }
+
+            ValueAnimator.ofInt(currPadding, newPadding).apply {
+                addUpdateListener {
+                    layout.setPadding(it.animatedValue as Int)
+                }
+                duration = 200
+                start()
+            }
+
+            checkBox.isChecked = isAdded
+        }
+
+        fun bind(post: AllPosts?, selected: Boolean) {
             val postVar = post?.posts!!
             val fileUri = Uri.parse(postVar.fileUri)
             if (!fileExists(uri = fileUri, url = postVar.url)) {
@@ -90,7 +105,13 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             }
             Log.d(TAG, "bind: uri: $fileUri")
 
-            val aspectRatio = getAspectRatio(fileUri, mimeType = postVar.mimeType)
+            val aspectRatio =
+                if (postVar.height == 0 || postVar.width == 0)
+                    getAspectRatio(fileUri, mimeType = postVar.mimeType)
+                else
+                    postVar.width.toFloat() / postVar.height
+
+
             val filePath = getFilePath(fileUri, mimeType = postVar.mimeType, url = postVar.url) ?: return
             Log.d(TAG, "bind: aspect ratio: $aspectRatio")
 
@@ -102,10 +123,41 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
             Log.d(TAG, "bind: uri: ${Uri.fromFile(File(fileUri.path!!))}")
 
             itemView.setOnClickListener {
-                Toast.makeText(itemView.context, fileUri.path, Toast.LENGTH_SHORT).show()
-                Toast.makeText(itemView.context, Uri.fromFile(File(filePath)).toString(), Toast.LENGTH_SHORT).show()
+                if (this@GalleryRecyclerViewAdapter.selectedPosts.isNotEmpty()) {
+                    val added = selectItem(post, adapterPosition)
+                    toggleSelectedItem(post, added)
+                } else {
+                    Toast.makeText(itemView.context, fileUri.path, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(itemView.context, Uri.fromFile(File(filePath)).toString(), Toast.LENGTH_SHORT).show()
+                }
             }
 
+            itemView.setOnLongClickListener {
+                val added = selectItem(post, adapterPosition)
+                toggleSelectedItem(post, added)
+                true
+            }
+
+            toggleSelectedItem(post, selected)
+        }
+
+        private fun selectItem(post: AllPosts, position: Int): Boolean {
+            with (this@GalleryRecyclerViewAdapter.selectedPosts) {
+                when (post) {
+                    this[position] -> {
+                        this.remove(position, post)
+                        listener?.onItemChanged(selectedPosts)
+
+                        return@selectItem false
+                    }
+                    else -> {
+                        this[position] = post
+                        listener?.onItemChanged(selectedPosts)
+
+                        return@selectItem true
+                    }
+                }
+            }
         }
 
         private fun fileExists(uri: Uri, url: String): Boolean {
@@ -173,23 +225,15 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
         }
 
         private fun getAspectRatio(uri: Uri, mimeType: String): Float {
-            // MediaMetadataRetriever doesn't support gif
-            if (mimeType.contains("gif")) {
+            // BitmapFactory supports images better
+            if (mimeType.contains("image")) {
                 return getAspectRatioBitmapFactory(uri)
             }
 
-            val keyCodes =
-                if (mimeType.contains("video")) {
-                    arrayOf(
-                        MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
-                        MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH
-                    )
-                } else {
-                    arrayOf(
-                        MediaMetadataRetriever.METADATA_KEY_IMAGE_HEIGHT,
-                        MediaMetadataRetriever.METADATA_KEY_IMAGE_WIDTH
-                    )
-                }
+            val keyCodes = arrayOf(
+                MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+                MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH
+            )
 
 
             val width: Float
@@ -218,14 +262,6 @@ class GalleryRecylerViewAdapter(val scope: CoroutineScope): ListAdapter<AllPosts
 
             BitmapFactory.decodeFileDescriptor(afd?.fileDescriptor, null, options)
             return options.outWidth.toFloat() / options.outHeight.toFloat()
-        }
-
-        companion object {
-            fun create(parent: ViewGroup, scope: CoroutineScope): PostsViewHolder {
-                val view: View = LayoutInflater.from(parent.context)
-                    .inflate(R.layout.recyclerview_post_items, parent, false)
-                return PostsViewHolder(view, scope)
-            }
         }
     }
 

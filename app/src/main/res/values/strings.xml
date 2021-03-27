@@ -4,11 +4,16 @@
     <string name="notification_channel_id">DIT_CHANNEL</string>
     <string name="notification_channel_name">Downloads</string>
     <string name="notification_channel_description">Notification of active downloads</string>
+    <string name="search_hint">Search posts</string>
 
     <string name="skip">Skip</string>
     <string name="next">Next</string>
     <string name="done">Done</string>
     <string name="cancel">Cancel</string>
+    <string name="share">Share</string>
+    <string name="delete">Delete</string>
+    <string name="rename">Rename</string>
+    <string name="more">More</string>
 
 
     <!--String for splash screen-->

@@ -159,7 +159,9 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
             }
 
             Log.d(TAG, "intent: ID: ${jobId.toInt()}")
-            val sharePendingIntent = PendingIntent.getBroadcast(appContext, jobId.toInt(), Intent.createChooser(shareIntent, fileName), PendingIntent.FLAG_UPDATE_CURRENT)
+            Log.d(TAG, "onSuccess: $fileName")
+            val sharePendingIntent = PendingIntent.getActivity(appContext, jobId.toInt(), Intent.createChooser(shareIntent, fileName), PendingIntent.FLAG_UPDATE_CURRENT)
+
 
             updateNotification(
                 contentText = applicationContext.getString(R.string.notif_success),
@@ -179,7 +181,7 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
             )
         }
 
-        override fun onError(exception: Exception) {
+        override fun onError(exception: Exception, displayError: Boolean) {
             Log.d(TAG, "onError: Download Error")
             Log.d(TAG, "onError: Exception: $exception")
             Log.e(TAG, exception.stackTraceToString() )
@@ -191,7 +193,7 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 //                        }
 
             updateNotification(
-                contentText = applicationContext.getString(R.string.notif_error),
+                contentText = if (displayError) exception.message else applicationContext.getString(R.string.notif_error),
                 progress = Triple(
                     first = 100, // max
                     second = 0F, // progress
@@ -231,10 +233,12 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
         return Result.success()
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun createPostDB(data: MutableMap<Downloader.DownloadData, Any>) {
         val json = data[Downloader.DownloadData.BASE_JSON]
         val fileUri = data[Downloader.DownloadData.FILE_URI]
         val mimeType = data[Downloader.DownloadData.MIME_TYPE] as String
+        val widthHeight = data[Downloader.DownloadData.WIDTH_HEIGHT]   as Pair<Int, Int>
         if (json is RedditJson) {
             val redditPost = RedditPosts(
                 url = "https://reddit.com" + json.url,
@@ -248,7 +252,9 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
                 url = "https://reddit.com" + json.url,
                 fileUri = fileUri.toString(),
                 platform = PostsPlatform.REDDIT,
-                mimeType = mimeType
+                mimeType = mimeType,
+                width = widthHeight.first,
+                height = widthHeight.second
             )
             appDB.postsDao().insert(post, redditPost)
 
@@ -273,7 +279,7 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
         createNotificationChannel()
 
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
         val pendingIntent = PendingIntent.getActivity(applicationContext, 0, intent, 0)

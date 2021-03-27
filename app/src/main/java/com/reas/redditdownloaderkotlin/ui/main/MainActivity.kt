@@ -42,15 +42,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         val view = binding.root
         setContentView(view)
 
-//        Fresco.initialize(this@MainActivity)
+        Fresco.initialize(this@MainActivity)
 
-        val requestListeners: MutableSet<RequestListener> = HashSet()
-        requestListeners.add(RequestLoggingListener())
-        val config = ImagePipelineConfig.newBuilder(this@MainActivity) // other setters
-            .setRequestListeners(requestListeners)
-            .build()
-        Fresco.initialize(this@MainActivity, config)
-        FLog.setMinimumLoggingLevel(FLog.VERBOSE)
 
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("lastFragment")) {
