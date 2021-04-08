@@ -26,6 +26,9 @@ interface PostsDAO {
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(posts: Posts)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(posts: Posts, redditPosts: RedditPosts)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -46,6 +49,9 @@ interface PostsDAO {
     @Query("DELETE FROM posts_instagram_table")
     suspend fun deleteInstagramPosts()
 
+    @Query("DELETE FROM posts_table WHERE id = :id")
+    suspend fun deletePostsWithID(id: Int)
+
     @Query("DELETE FROM posts_table WHERE url = :url")
     suspend fun deletePostsWithUrl(url: String)
 
@@ -56,4 +62,9 @@ interface PostsDAO {
     suspend fun deleteInstagramPostsWithUrl(url: String)
 
 
+    @Query("UPDATE posts_table SET is_favorite = :isFav WHERE url = :url")
+    suspend fun setFavoriteWithUrl(isFav: Int, url: String)
+
+    @Query("UPDATE posts_table SET is_favorite = :isFav WHERE id = :id")
+    suspend fun setFavoriteWithId(isFav: Int, id: Int)
 }

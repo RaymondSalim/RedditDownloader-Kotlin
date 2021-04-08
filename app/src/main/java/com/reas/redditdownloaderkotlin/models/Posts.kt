@@ -18,18 +18,23 @@ import java.time.Instant
  */
 @Entity(tableName = "posts_table")
 data class Posts(
-    @PrimaryKey @ColumnInfo(name = "url") val url: String,
+    @ColumnInfo(name = "url") val url: String?,
     @ColumnInfo(name = "downloaded_at") val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "file_uri") val fileUri: String?,
     @ColumnInfo(name = "mime_type") val mimeType: String,
-    @ColumnInfo(name = "platform") val platform: PostsPlatform, // Instagram or Reddit
+    @ColumnInfo(name = "platform") val platform: PostsPlatform, // Instagram or Reddit or unknown
     @ColumnInfo(name = "height") val height: Int,
     @ColumnInfo(name = "width") val width: Int,
-)
+
+    @ColumnInfo(name = "is_favorite") var isFavorite: Boolean = false
+) {
+    @PrimaryKey(autoGenerate = true) var id: Int = 0
+}
 
 enum class PostsPlatform {
     INSTAGRAM,
-    REDDIT
+    REDDIT,
+    UNKNOWN
 }
 
 class PostsPlatformConverter {

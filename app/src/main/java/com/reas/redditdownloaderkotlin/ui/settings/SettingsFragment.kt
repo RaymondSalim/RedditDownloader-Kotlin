@@ -6,10 +6,12 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.reas.redditdownloaderkotlin.R
+import com.reas.redditdownloaderkotlin.util.MediaScanner
 
 private const val DIRECTORY_REQUEST_CODE = 1;
 
@@ -19,17 +21,25 @@ class SettingsFragment : SharedPreferences.OnSharedPreferenceChangeListener, Pre
         setPreferencesFromResource(R.xml.root_preferences, rootKey)
         preferenceScreen.sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
-        val downloadLocation = findPreference<Preference>("DOWNLOAD_LOCATION")
-        with(downloadLocation) {
-            this?.summary = this?.sharedPreferences?.getString("DOWNLOAD_LOCATION", "Not Set")
+//        val downloadLocation = findPreference<Preference>("DOWNLOAD_LOCATION")
+//        with(downloadLocation) {
+//            this?.summary = this?.sharedPreferences?.getString("DOWNLOAD_LOCATION", "Not Set")
+//
+//            this?.setOnPreferenceClickListener {
+//                val fileManagerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+//                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+//                    putExtra(DocumentsContract.EXTRA_INITIAL_URI, context.getExternalFilesDir(null)?.canonicalPath)
+//                }
+//
+//                startActivityForResult(fileManagerIntent, DIRECTORY_REQUEST_CODE)
+//                true
+//            }
+//        }
 
-            this?.setOnPreferenceClickListener {
-                val fileManagerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    putExtra(DocumentsContract.EXTRA_INITIAL_URI, context.getExternalFilesDir(null)?.canonicalPath)
-                }
-
-                startActivityForResult(fileManagerIntent, DIRECTORY_REQUEST_CODE)
+        findPreference<Preference>("MEDIA_SCAN")?.apply {
+            onPreferenceClickListener = Preference.OnPreferenceClickListener {
+                Toast.makeText(requireContext(), "Scanning media...", Toast.LENGTH_SHORT).show()
+                MediaScanner(requireContext()).scanMedia()
                 true
             }
         }

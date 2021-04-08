@@ -50,13 +50,14 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/favorite_checkbox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/favorites_confirmation"
                 />
 
         <androidx.appcompat.widget.LinearLayoutCompat
-                android:layout_gravity="right"
+                android:layout_gravity="end"
                 android:layout_marginTop="16dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

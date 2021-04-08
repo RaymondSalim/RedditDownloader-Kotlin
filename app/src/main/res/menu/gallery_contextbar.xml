@@ -2,23 +2,27 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/share"
+        android:id="@+id/share_btn"
         android:icon="@drawable/ic_round_share_24"
         android:title="@string/share"
         android:contentDescription="@string/share"
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/delete"
+        android:id="@+id/delete_btn"
         android:icon="@drawable/ic_round_delete_24"
         android:title="@string/delete"
         android:contentDescription="@string/delete"
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/favorite"
+        android:visible="false"
+        android:id="@+id/favorite_btn"
         android:title="@string/favorites"
         android:contentDescription="@string/favorites"
         android:icon="@drawable/ic_baseline_favorite_24"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom"
+        app:actionViewClass="com.google.android.material.checkbox.MaterialCheckBox"
+    />
+
 </menu>

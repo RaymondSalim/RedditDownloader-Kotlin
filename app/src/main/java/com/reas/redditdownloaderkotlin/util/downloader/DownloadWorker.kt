@@ -27,6 +27,7 @@ private const val TAG = "DownloadWorker"
 class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): Worker(appContext, workerParameters) {
     private val appDB: AppDB = AppDB.getDatabase(applicationContext)
     private lateinit var url: String
+    private var isFavourite: Boolean = false
     private var builder: NotificationCompat.Builder? = null
     private var jobId: Long = 0
     private var lastUpdate = 0L
@@ -208,6 +209,7 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
 
     override fun doWork(): Result {
         url = inputData.getString("URL")!!
+        isFavourite = inputData.getBoolean("IS_FAVORITE", false)
         addJobToDB()
 
         try {
@@ -254,7 +256,8 @@ class DownloadWorker(appContext: Context, workerParameters: WorkerParameters): W
                 platform = PostsPlatform.REDDIT,
                 mimeType = mimeType,
                 width = widthHeight.first,
-                height = widthHeight.second
+                height = widthHeight.second,
+                isFavorite = this.isFavourite
             )
             appDB.postsDao().insert(post, redditPost)
 

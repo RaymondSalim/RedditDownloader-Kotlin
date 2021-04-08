@@ -6,10 +6,6 @@
         <item name="colorPrimaryDark">@color/statusBarColor</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
-<!--        <item name="snackbarStyle">@style/SnackBarStyle</item>-->
-<!--        <item name="snackbarButtonStyle">@style/Widget.MaterialComponents.Button.TextButton.Snackbar</item>-->
-<!--        <item name="snackbarTextViewStyle">@style/Widget.MaterialComponents.Snackbar.TextView</item>-->
-
         <item name="searchViewStyle">@style/SearchViewStyle</item>
 
         <item name="windowActionModeOverlay">true</item>
@@ -41,6 +37,11 @@
 
     <style name="RecyclerviewCheckBox" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
         <item name="android:button">@drawable/checkbox_selector</item>
+    </style>
+
+    <style name="RecyclerViewFavorite" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
+        <item name="android:button">@drawable/favorite_checkbox</item>
+
     </style>
 
     <style name="Widget.App.ActionMode" parent="Widget.AppCompat.ActionMode">

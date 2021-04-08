@@ -23,13 +23,6 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="q"
     >
-        <activity android:name=".ui.gallery.GallerySearchActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.SEARCH" />
-            </intent-filter>
-            <meta-data android:name="android.app.searchable"
-                       android:resource="@xml/searchable"/>
-        </activity>
         <activity
             android:name=".ui.share_intent.ShareIntentActivity"
             android:theme="@style/ShareIntent">
@@ -52,6 +45,7 @@
         </activity>
         <activity android:name=".ui.main.MainActivity">
         </activity>
+        <meta-data android:name="preloaded_fonts" android:resource="@array/preloaded_fonts"/>
     </application>
 
 </manifest>

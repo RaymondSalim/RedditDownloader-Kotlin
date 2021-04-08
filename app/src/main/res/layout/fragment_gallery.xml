@@ -19,6 +19,40 @@
             android:clipToPadding="false"
         />
 
+        <RelativeLayout
+            android:id="@+id/empty_view"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginHorizontal="32dp"
+            android:visibility="gone"
+        >
+
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/empty_animation"
+                android:layout_centerVertical="true"
+                android:layout_centerHorizontal="true"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/empty_animation_min_dimen"
+                app:lottie_rawRes="@raw/empty"
+                app:lottie_loop="true"
+                app:lottie_autoPlay="true"
+                />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/empty_animation"
+                android:layout_centerHorizontal="true"
+                android:fontFamily="@font/roboto"
+                android:text="@string/empty" android:textAlignment="center"/>
+
+        </RelativeLayout>
+
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab"

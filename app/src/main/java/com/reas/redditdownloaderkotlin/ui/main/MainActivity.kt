@@ -1,27 +1,20 @@
 package com.reas.redditdownloaderkotlin.ui.main
 
+import android.animation.LayoutTransition
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.*
+import androidx.transition.TransitionManager
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.google.android.material.shape.CornerFamily
 import com.google.android.material.shape.MaterialShapeDrawable
-import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.databinding.ActivityMainBinding
 import com.reas.redditdownloaderkotlin.ui.gallery.GalleryFragment
 import com.reas.redditdownloaderkotlin.ui.settings.SettingsFragment
-import com.facebook.common.logging.FLog
-
-import com.facebook.imagepipeline.core.ImagePipelineConfig
-
-import com.facebook.imagepipeline.listener.RequestLoggingListener
-
-import com.facebook.imagepipeline.listener.RequestListener
-
-
-
+import com.reas.redditdownloaderkotlin.R
 
 
 const val TAG = "MainActivity"
@@ -51,6 +44,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }
         }
 
+        initializeAppBar()
+
         initializeFragments()
 
         initializeBottomNavView()
@@ -59,6 +54,17 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         Toast.makeText(applicationContext, noBackupFilesDir.absolutePath, Toast.LENGTH_SHORT).show()
         Log.d(TAG, "onCreate: $noBackupFilesDir")
 
+    }
+
+    private fun initializeAppBar() {
+        binding.searchViewBtn.apply {
+            maxWidth = Int.MAX_VALUE
+            layoutTransition = LayoutTransition()
+            setOnClickListener { view ->
+                TransitionManager.beginDelayedTransition(binding.toolbar)
+                (view as SearchView).isIconified = !view.isIconified
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
