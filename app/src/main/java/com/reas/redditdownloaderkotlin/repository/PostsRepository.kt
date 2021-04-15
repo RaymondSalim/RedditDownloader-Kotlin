@@ -1,5 +1,6 @@
 package com.reas.redditdownloaderkotlin.repository
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.reas.redditdownloaderkotlin.models.Posts
 import com.reas.redditdownloaderkotlin.database.PostsDAO
@@ -28,7 +29,8 @@ class PostsRepository(private val postsDao: PostsDAO) {
     suspend fun toggleFavorite(post: List<AllPosts>, isFav: Boolean) {
         post.forEach {
             it.posts.isFavorite = isFav
-            postsDao.setFavoriteWithId(isFav = isFav.toInt(), id = it.posts.id)
+            Log.d("PostsDAO", "setFavoriteWIthURI: ${it.posts}")
+            postsDao.setFavoriteWithURI(isFav = isFav.toInt(), fileUri = it.posts.fileUri)
 //            postsDao.setFavoriteWithUrl(isFav = isFav.toInt(), url = it.posts.url)
         }
     }

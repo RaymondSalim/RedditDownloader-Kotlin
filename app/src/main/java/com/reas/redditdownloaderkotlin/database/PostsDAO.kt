@@ -1,11 +1,14 @@
 package com.reas.redditdownloaderkotlin.database
 
+import android.util.Log
 import androidx.room.*
 import com.reas.redditdownloaderkotlin.models.AllPosts
 import com.reas.redditdownloaderkotlin.models.InstagramPosts
 import com.reas.redditdownloaderkotlin.models.Posts
 import com.reas.redditdownloaderkotlin.models.RedditPosts
 import kotlinx.coroutines.flow.Flow
+
+private const val TAG = "PostsDAO"
 
 @Dao
 interface PostsDAO {
@@ -25,8 +28,23 @@ interface PostsDAO {
         deleteInstagramPostsWithUrl(url)
     }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     fun insert(posts: Posts)
+
+    /**
+     * Checks if an existing Posts with the same fileUri exists, ignore if it exists, inserts new if it does not
+     */
+    @Transaction
+    fun insertOrIgnore(posts: Posts) {
+        Log.d(TAG, "insertOrIgnore: ${posts.fileUri}")
+        Log.d(TAG, "insertOrIgnore: ${countByUri(posts.fileUri)}")
+        if (countByUri(posts.fileUri) == 0) {
+            insert(posts)
+        }
+    }
+
+    @Query("SELECT COUNT(*) FROM posts_table WHERE file_uri = :fileUri")
+    fun countByUri(fileUri: String): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(posts: Posts, redditPosts: RedditPosts)
@@ -49,8 +67,8 @@ interface PostsDAO {
     @Query("DELETE FROM posts_instagram_table")
     suspend fun deleteInstagramPosts()
 
-    @Query("DELETE FROM posts_table WHERE id = :id")
-    suspend fun deletePostsWithID(id: Int)
+    @Query("DELETE FROM posts_table WHERE file_uri = :fileUri")
+    suspend fun deletePostsWithURI(fileUri: String)
 
     @Query("DELETE FROM posts_table WHERE url = :url")
     suspend fun deletePostsWithUrl(url: String)
@@ -61,10 +79,9 @@ interface PostsDAO {
     @Query("DELETE FROM posts_instagram_table WHERE url = :url")
     suspend fun deleteInstagramPostsWithUrl(url: String)
 
-
     @Query("UPDATE posts_table SET is_favorite = :isFav WHERE url = :url")
     suspend fun setFavoriteWithUrl(isFav: Int, url: String)
 
-    @Query("UPDATE posts_table SET is_favorite = :isFav WHERE id = :id")
-    suspend fun setFavoriteWithId(isFav: Int, id: Int)
+    @Query("UPDATE posts_table SET is_favorite = :isFav WHERE file_uri = :fileUri")
+    suspend fun setFavoriteWithURI(isFav: Int, fileUri: String)
 }
