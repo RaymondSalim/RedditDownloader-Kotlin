@@ -1,30 +1,32 @@
 package com.reas.redditdownloaderkotlin.ui.main
 
-import android.animation.LayoutTransition
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.*
-import androidx.transition.TransitionManager
-import com.facebook.drawee.backends.pipeline.Fresco
 import com.google.android.material.shape.CornerFamily
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.reas.redditdownloaderkotlin.databinding.ActivityMainBinding
 import com.reas.redditdownloaderkotlin.ui.gallery.GalleryFragment
 import com.reas.redditdownloaderkotlin.ui.settings.SettingsFragment
 import com.reas.redditdownloaderkotlin.R
+import com.github.piasy.biv.BigImageViewer
+import com.github.piasy.biv.loader.fresco.FrescoImageLoader
+import com.reas.redditdownloaderkotlin.ui.search.SearchFragment
 
 
-const val TAG = "MainActivity"
+private const val TAG = "MainActivity"
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private lateinit var binding: ActivityMainBinding
 
-
-    private val settingsFragment = SettingsFragment.instance
-    private val galleryFragment = GalleryFragment.instance
+    // Order of array matters
+    private val fragmentsArray: Array<Pair<String, Fragment>> = arrayOf(
+        Pair(R.id.gallery_fragment.toString(), GalleryFragment.instance),
+        Pair(R.id.search_fragment.toString(), SearchFragment.instance),
+        Pair(R.id.settings_fragment.toString(), SettingsFragment.instance)
+    )
     private lateinit var lastFragment: Fragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,16 +37,14 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         val view = binding.root
         setContentView(view)
 
-        Fresco.initialize(this@MainActivity)
-
+//        Fresco.initialize(this@MainActivity)
+        BigImageViewer.initialize(FrescoImageLoader.with(applicationContext))
 
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("lastFragment")) {
                 lastFragment = supportFragmentManager.getFragment(savedInstanceState, "lastFragment")!!
             }
         }
-
-        initializeAppBar()
 
         initializeFragments()
 
@@ -54,17 +54,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         Toast.makeText(applicationContext, noBackupFilesDir.absolutePath, Toast.LENGTH_SHORT).show()
         Log.d(TAG, "onCreate: $noBackupFilesDir")
 
-    }
-
-    private fun initializeAppBar() {
-        binding.searchViewBtn.apply {
-            maxWidth = Int.MAX_VALUE
-            layoutTransition = LayoutTransition()
-            setOnClickListener { view ->
-                TransitionManager.beginDelayedTransition(binding.toolbar)
-                (view as SearchView).isIconified = !view.isIconified
-            }
-        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -81,15 +70,21 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         // Adds new fragment to the fragment manager if it doesn't exists
         supportFragmentManager.commitNow {
             with(supportFragmentManager) {
-                if (this.findFragmentByTag(R.id.settings_fragment.toString()) !is Fragment) {
-                    Log.d(TAG, "initializeFragments: FM Does not have settingsFragment, initializing...")
-                    add(R.id.fragment_container_view, settingsFragment, R.id.settings_fragment.toString())
+                fragmentsArray.forEach {
+                    if (findFragmentByTag(it.first) !is Fragment) {
+                        Log.d(TAG, "initializeFragments: FM Does not have ${it.second::javaClass}, initializing...")
+                        add(R.id.fragment_container_view, it.second, it.first)
+                    }
                 }
-
-                if (this.findFragmentByTag(R.id.gallery_fragment.toString()) !is Fragment) {
-                    Log.d(TAG, "initializeFragments: FM Does not have galleryFragment, initializing...")
-                    add(R.id.fragment_container_view, galleryFragment, R.id.gallery_fragment.toString())
-                }
+//                if (findFragmentByTag(R.id.settings_fragment.toString()) !is Fragment) {
+//                    Log.d(TAG, "initializeFragments: FM Does not have settingsFragment, initializing...")
+//                    add(R.id.fragment_container_view, settingsFragment, R.id.settings_fragment.toString())
+//                }
+//
+//                if (findFragmentByTag(R.id.gallery_fragment.toString()) !is Fragment) {
+//                    Log.d(TAG, "initializeFragments: FM Does not have galleryFragment, initializing...")
+//                    add(R.id.fragment_container_view, galleryFragment, R.id.gallery_fragment.toString())
+//                }
             }
         }
 
@@ -171,10 +166,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 Log.d(TAG, "initializeFragments: List of Fragments: $listOfFragments")
 
             } else {
-                listOfFragments.remove(galleryFragment)
+                listOfFragments.remove(fragmentsArray[0].second)
                 Log.d(TAG, "initializeFragments: List of Fragments: $listOfFragments")
 
-                lastFragment = galleryFragment
+                lastFragment = fragmentsArray[0].second
             }
 
             listOfFragments.forEach {
