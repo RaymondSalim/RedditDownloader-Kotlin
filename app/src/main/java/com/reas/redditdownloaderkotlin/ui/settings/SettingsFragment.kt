@@ -2,9 +2,11 @@ package com.reas.redditdownloaderkotlin.ui.settings
 
 import android.app.Activity
 import android.content.Intent
+import android.content.SearchRecentSuggestionsProvider
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.provider.DocumentsContract
+import android.provider.SearchRecentSuggestions
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
@@ -12,6 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.util.MediaScanner
+import com.reas.redditdownloaderkotlin.util.search.SearchRecentProvider
 
 private const val DIRECTORY_REQUEST_CODE = 1;
 
@@ -36,10 +39,18 @@ class SettingsFragment : SharedPreferences.OnSharedPreferenceChangeListener, Pre
 //            }
 //        }
 
-        findPreference<Preference>("MEDIA_SCAN")?.apply {
-            onPreferenceClickListener = Preference.OnPreferenceClickListener {
+        findPreference<Preference>("MEDIA_SCAN")?.let {
+            it.setOnPreferenceClickListener {
                 Toast.makeText(requireContext(), "Scanning media...", Toast.LENGTH_SHORT).show()
                 MediaScanner(requireContext()).scanMedia()
+                true
+            }
+        }
+
+        findPreference<Preference>("CLEAR_RECENT_SEARCH")?.let {
+            it.setOnPreferenceClickListener {
+                SearchRecentSuggestions(requireContext(), SearchRecentProvider.AUTHORITY, SearchRecentProvider.MODE)
+                    .clearHistory()
                 true
             }
         }
