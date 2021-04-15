@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
-          package="com.reas.redditdownloaderkotlin"
->
+          package="com.reas.redditdownloaderkotlin">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -17,12 +16,17 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:requestLegacyExternalStorage="true"
-        tools:targetApi="q"
-    >
+        tools:targetApi="q">
+        <activity
+            android:name=".ui.media_viewer.MediaViewerActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:label="@string/title_activity_media_viewer"
+            android:theme="@style/FullscreenTheme">
+        </activity>
         <activity
             android:name=".ui.share_intent.ShareIntentActivity"
             android:theme="@style/ShareIntent">
@@ -44,8 +48,22 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.main.MainActivity">
+            <meta-data
+                android:name="android.app.default_searchable"
+                android:value=".ui.main.SearchableActivity"/>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH"/>
+            </intent-filter>
         </activity>
-        <meta-data android:name="preloaded_fonts" android:resource="@array/preloaded_fonts"/>
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts"/>
+
+        <provider
+            android:name=".util.search.SearchRecentProvider"
+            android:authorities="com.reas.redditdownloaderkotlin.util.search.SearchRecentProvider"/>
     </application>
 
 </manifest>
