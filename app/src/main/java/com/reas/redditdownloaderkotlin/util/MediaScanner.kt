@@ -132,6 +132,6 @@ class MediaScanner(private val context: Context) {
     }
 
     private fun addToDb(post: Posts) {
-        appDB.postsDao().insert(post)
+        appDB.postsDao().insertOrIgnore(post)
     }
 }
