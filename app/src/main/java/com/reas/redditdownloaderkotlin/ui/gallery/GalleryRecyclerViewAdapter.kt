@@ -8,9 +8,7 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.*
 import android.widget.CheckBox
-import android.widget.RelativeLayout
 import android.widget.Toast
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -36,6 +34,7 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
 
     interface AdapterInterface {
         fun onItemChanged(selectedPost: MutableMap<Int, AllPosts>)
+        fun onItemClicked(post: AllPosts?)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostsViewHolder {
@@ -79,8 +78,10 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
 
         fun bind(post: AllPosts?, selected: Boolean) {
             val postVar = post?.posts!!
+            Log.d(TAG, "bindisFav: $postVar")
             val fileUri = Uri.parse(postVar.fileUri)
-            if (!fileExists(uri = fileUri, url = postVar.url, id = postVar.id)) {
+
+            if (!fileExists(uri = fileUri, url = postVar.url)) {
                 return
             }
             Log.d(TAG, "bind: uri: $fileUri")
@@ -95,12 +96,14 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
             val filePath = getFilePath(fileUri, mimeType = postVar.mimeType, url = postVar.url) ?: return
             Log.d(TAG, "bind: aspect ratio: $aspectRatio")
 
+
             draweeView.controller = Fresco.newDraweeControllerBuilder()
                 .setUri(Uri.fromFile(File(filePath)))
                 .setAutoPlayAnimations(true)
                 .build()
             draweeView.aspectRatio = aspectRatio
             Log.d(TAG, "bind: uri: ${Uri.fromFile(File(fileUri.path!!))}")
+
 
             if (multiselectOn) {
                 with (itemView.findViewById<MaterialCheckBox>(R.id.recycler_view_favorite)) {
@@ -128,6 +131,7 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
                         Log.d(TAG, "bind: $post")
                         Toast.makeText(itemView.context, fileUri.path, Toast.LENGTH_SHORT).show()
                         Toast.makeText(itemView.context, Uri.fromFile(File(filePath)).toString(), Toast.LENGTH_SHORT).show()
+                        listener?.onItemClicked(post)
                     }
                 }
 
@@ -140,6 +144,7 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
 
             toggleSelectedItem(post, selected)
         }
+
 
         private fun toggleSelectedItem(post: AllPosts, isAdded: Boolean) {
             val layout = itemView.findViewById<SimpleDraweeView>(R.id.drawee_view)
@@ -185,25 +190,25 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
             }
         }
 
-        private fun fileExists(uri: Uri, url: String?, id: Int): Boolean {
+        private fun fileExists(uri: Uri, url: String?): Boolean {
             return try {
                 itemView.context.contentResolver.openAssetFileDescriptor(uri, "r")?.close()
                 true
             } catch (e: FileNotFoundException) {
                 if (url != null) {
-                    handleFileNotFound(url, id)
+                    handleFileNotFound(url, uri.toString())
                 }
                 false
             }
         }
 
-        private fun handleFileNotFound(url: String, id: Int) {
+        private fun handleFileNotFound(url: String, fileUri: String) {
             scope.launch(Dispatchers.Main) {
                 val db = AppDB.INSTANCE?.postsDao()
                 db?.deleteWithUrl(url)
                 db?.deleteInstagramPostsWithUrl(url)
                 db?.deleteRedditPostsWithUrl(url)
-                db?.deletePostsWithID(id)
+                db?.deletePostsWithURI(fileUri)
             }
         }
 

@@ -3,31 +3,27 @@ package com.reas.redditdownloaderkotlin.ui.gallery
 import android.Manifest
 import android.content.ContextWrapper
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.Button
-import android.widget.ImageButton
 import android.widget.RelativeLayout
 import androidx.fragment.app.Fragment
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.view.marginBottom
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
-import com.airbnb.lottie.LottieAnimationView
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.RedditDownloaderApplication
 import com.reas.redditdownloaderkotlin.databinding.FragmentGalleryBinding
 import com.reas.redditdownloaderkotlin.models.AllPosts
+import com.reas.redditdownloaderkotlin.ui.media_viewer.MediaViewerActivity
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.ArrayList
 import java.util.stream.Collectors
 
@@ -107,9 +103,12 @@ class GalleryFragment : Fragment(), SearchView.OnQueryTextListener {
                                 R.drawable.ic_baseline_favorite_border_24,
                             null)
                     }
-
                     val postsList = data.values.toList()
                     galleryViewModel.updateFavorite(postsList, item.isChecked)
+                    data.keys.forEach {
+                        (binding.postRecyclerview.adapter as GalleryRecyclerViewAdapter).notifyItemChanged(it)
+                    }
+
                 }
 
                 R.id.delete_btn -> {
@@ -154,6 +153,12 @@ class GalleryFragment : Fragment(), SearchView.OnQueryTextListener {
             setListener(object: GalleryRecyclerViewAdapter.AdapterInterface {
                 override fun onItemChanged(selectedPost: MutableMap<Int, AllPosts>) {
                     galleryViewModel.recyclerViewSelectedPosts.value = selectedPost
+                }
+
+                override fun onItemClicked(post: AllPosts?) {
+                    val intent = Intent(requireContext(), MediaViewerActivity::class.java)
+                    intent.putExtra("post_info", Json.encodeToString(post))
+                    startActivity(intent)
                 }
 
             })
