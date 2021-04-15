@@ -30,6 +30,11 @@
             app:title="@string/scan_media"
             />
 
+        <Preference
+            app:key="CLEAR_RECENT_SEARCH"
+            app:title="@string/clear_recent_search"
+            />
+
 
     </PreferenceCategory>
 

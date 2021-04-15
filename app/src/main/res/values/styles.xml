@@ -12,6 +12,9 @@
         <item name="actionModeStyle">@style/Widget.App.ActionMode</item>
         <item name="actionModeCloseDrawable">@drawable/ic_round_close_24</item>
         <item name="actionBarTheme">@style/ThemeOverlay.MaterialComponents.Dark.ActionBar</item>
+
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 
     <style name="RoundedCornersDialog" parent="@style/Theme.MaterialComponents.DayNight.Dialog">
@@ -25,11 +28,11 @@
         <item name="boxStrokeWidth">2dp</item>
     </style>
 
-<!--    <style name="SnackBarStyle" parent="@style/Widget.MaterialComponents.Snackbar" tools:override="true">-->
-<!--        <item name="android:layout_margin">@dimen/bottomNavBarMargin</item>-->
-<!--        <item name="android:background">#FFFFFF</item>-->
-<!--        <item name="android:maxWidth">50px</item>-->
-<!--    </style>-->
+    <!--    <style name="SnackBarStyle" parent="@style/Widget.MaterialComponents.Snackbar" tools:override="true">-->
+    <!--        <item name="android:layout_margin">@dimen/bottomNavBarMargin</item>-->
+    <!--        <item name="android:background">#FFFFFF</item>-->
+    <!--        <item name="android:maxWidth">50px</item>-->
+    <!--    </style>-->
 
     <style name="SearchViewStyle" parent="@style/Widget.AppCompat.SearchView">
         <item name="queryHint">@string/search_hint</item>
@@ -41,7 +44,9 @@
 
     <style name="RecyclerViewFavorite" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
         <item name="android:button">@drawable/favorite_checkbox</item>
-
+        <item name="android:textColor">@null</item>
+        <item name="enforceMaterialTheme">false</item>
+        <item name="useMaterialThemeColors">false</item>
     </style>
 
     <style name="Widget.App.ActionMode" parent="Widget.AppCompat.ActionMode">
@@ -58,6 +63,20 @@
     <style name="ShareIntent" parent="Theme.MaterialComponents.DayNight.Dialog.Alert.Bridge">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="FullscreenTheme" parent="AppTheme">
+        <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:windowBackground">@null</item>
+        <item name="metaButtonBarStyle">?android:attr/buttonBarStyle</item>
+        <item name="metaButtonBarButtonStyle">?android:attr/buttonBarButtonStyle</item>
+    </style>
+
+    <style name="FullscreenActionBarStyle" parent="Widget.AppCompat.ActionBar">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="elevation">0dp</item>
+        <item name="android:elevation">0dp</item>
     </style>
 
 </resources>

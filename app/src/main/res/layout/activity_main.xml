@@ -5,7 +5,11 @@
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MainActivity">
+        tools:context=".ui.main.MainActivity"
+        android:fitsSystemWindows="true"
+>
+
+
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -20,31 +24,23 @@
         />
 
         <com.google.android.material.appbar.AppBarLayout
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            >
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                app:layout_scrollFlags="scroll|enterAlways"
-                >
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                >
-
-                    <androidx.appcompat.widget.SearchView
-                        android:id="@+id/search_view_btn"
+            >
+                    <androidx.appcompat.widget.AppCompatImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        app:iconifiedByDefault="true"
-                        />
-                </RelativeLayout>
+                        android:src="@drawable/ic_notification_icon"
+                        android:layout_gravity="center_vertical|center_horizontal"
+                    />
 
 
             </com.google.android.material.appbar.MaterialToolbar>
@@ -52,25 +48,25 @@
         </com.google.android.material.appbar.AppBarLayout>
 
 
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-    <androidx.constraintlayout.widget.Guideline
+        <androidx.constraintlayout.widget.Guideline
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:id="@+id/left_guideline"
             app:layout_constraintGuide_percent=".10"
             android:orientation="vertical"
-    />
+        />
 
-    <androidx.constraintlayout.widget.Guideline
+        <androidx.constraintlayout.widget.Guideline
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:id="@+id/right_guideline"
         app:layout_constraintGuide_percent=".90"
         android:orientation="vertical"
-    />
+        />
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
+        <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_nav"
             android:background="@color/appBarColor"
             android:layout_width="0dp"
@@ -86,6 +82,6 @@
             app:layout_constraintStart_toStartOf="@id/left_guideline"
             app:layout_constraintEnd_toEndOf="@id/right_guideline"
             app:menu="@menu/bottom_nav_view"
-    />
+        />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
