@@ -2,7 +2,9 @@ package com.reas.redditdownloaderkotlin.models
 
 import androidx.room.Embedded
 import androidx.room.Relation
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class AllPosts(
     @Embedded val posts: Posts,
     @Relation(
