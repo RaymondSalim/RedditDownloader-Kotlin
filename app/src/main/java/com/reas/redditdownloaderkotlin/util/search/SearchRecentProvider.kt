@@ -1,7 +1,6 @@
 package com.reas.redditdownloaderkotlin.util.search
 
 import android.content.SearchRecentSuggestionsProvider
-import com.reas.redditdownloaderkotlin.PACKAGE_NAME
 
 class SearchRecentProvider: SearchRecentSuggestionsProvider() {
     init {
