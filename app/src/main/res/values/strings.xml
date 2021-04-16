@@ -14,15 +14,22 @@
     <string name="delete">Delete</string>
     <string name="rename">Rename</string>
     <string name="more">More</string>
-
+    <string name="get_me_out">Get me out of here!</string>
 
     <!--String for splash screen-->
     <string name="splash_text_1">APP_NAME supports downloading media from reddit and instagram.</string>
     <string name="splash_text_2">APP_NAME stores information about the downloaded post</string>
     <string name="splash_text_3">Share directly from app!</string>
+    <string name="permission_description">APP_NAME requires access to your storage to process and view media files
+    </string>
+    <string name="permission_confirmation">Some features such as downloading videos from v.redd.it and viewing files
+        might not work. Are you sure?
+    </string>
+    <string name="request">Request</string>
 
     <!--String for bottom navigation bar-->
     <string name="gallery">Gallery</string>
+    <string name="search">Search</string>
     <string name="favorites">Favorite</string>
     <string name="settings">Settings</string>
 
@@ -35,6 +42,10 @@
     <string name="dialog_fragment_content">Enter an Instagram or Reddit URL</string>
 
     <string name="download_started_notification">Download Started</string>
+
+
+    <!-- Gallery Fragment-->
+    <string name="empty">It looks empty here..\nStart by downloading some media!</string>
 
     <!-- Notification Strings-->
     <string name="notif_start">Starting</string>
@@ -49,8 +60,10 @@
     <string name="notif_actions_share">Share</string>
 
     <!-- Preference Titles -->
-    <string name="general_header">General</string>ad
+    <string name="general_header">General</string>
     <string name="sync_header">Sync</string>
+    <string name="scan_media">Scan existing media files</string>
+    <string name="clear_recent_search">Clear search history</string>
 
     <!-- General Preferences -->
     <string name="signature_title">Your signature</string>
@@ -63,4 +76,7 @@
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="title_activity_media_viewer">FullscreenActivity</string>
 </resources>

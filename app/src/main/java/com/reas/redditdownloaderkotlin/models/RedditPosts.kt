@@ -3,6 +3,7 @@ package com.reas.redditdownloaderkotlin.models
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Data are mostly gathered from json response (reddit.com/r/xxx/xxx/.json)
@@ -12,6 +13,7 @@ import androidx.room.PrimaryKey
  * @param date = data > children > data > created_utc
  * @param author = data > children > data > author
  */
+@Serializable
 @Entity(tableName = "posts_reddit_table")
 data class RedditPosts(
     @ColumnInfo(name = "url") val url: String?,

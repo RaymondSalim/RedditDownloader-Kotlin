@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import com.reas.redditdownloaderkotlin.util.downloader.JobStatus
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.Json
  *
  */
 
+@Serializable
 @Entity(tableName = "jobs_table")
 data class Jobs(
     @ColumnInfo(name = "url") val url: String,

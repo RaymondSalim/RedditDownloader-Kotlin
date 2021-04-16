@@ -8,7 +8,6 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.*
 import android.widget.CheckBox
-import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.DiffUtil
@@ -16,6 +15,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.drawee.view.SimpleDraweeView
+import com.google.android.material.checkbox.MaterialCheckBox
 import com.reas.redditdownloaderkotlin.R
 import com.reas.redditdownloaderkotlin.database.AppDB
 import com.reas.redditdownloaderkotlin.models.AllPosts
@@ -29,11 +29,12 @@ private const val TAG = "GalleryRecyclerViewAdapter"
 
 class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter<AllPosts, GalleryRecyclerViewAdapter.PostsViewHolder>(PostsComparator()) {
     private val selectedPosts = mutableMapOf<Int, AllPosts>()
-
     private var listener: AdapterInterface? = null
+    private var multiselectOn: Boolean = false
 
     interface AdapterInterface {
         fun onItemChanged(selectedPost: MutableMap<Int, AllPosts>)
+        fun onItemClicked(post: AllPosts?)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostsViewHolder {
@@ -44,6 +45,10 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
         val current = getItem(position)
         val isSelected = selectedPosts[position] == getItem(position)
         holder.bind(current, selected = isSelected)
+    }
+
+    fun setMultiselect(`val`: Boolean) {
+        this.multiselectOn = `val`
     }
 
     fun setListener(adapterInterface: AdapterInterface) {
@@ -71,35 +76,11 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
 
         private val draweeView:SimpleDraweeView = itemView.findViewById(R.id.drawee_view)
 
-        private fun toggleSelectedItem(post: AllPosts, isAdded: Boolean) {
-            val layout = itemView.findViewById<RelativeLayout>(R.id.recycler_view_layout)
-            val checkBox = itemView.findViewById<CheckBox>(R.id.recycler_view_checkbox)
-
-            val currPadding = layout.paddingLeft
-            val newPadding: Int
-
-            if (isAdded) {
-                newPadding = itemView.context.resources.getDimension(R.dimen.recyclerview_item_padding_selected).toInt()
-                checkBox.visibility = View.VISIBLE
-            } else {
-                newPadding = 0
-                checkBox.visibility = View.INVISIBLE
-            }
-
-            ValueAnimator.ofInt(currPadding, newPadding).apply {
-                addUpdateListener {
-                    layout.setPadding(it.animatedValue as Int)
-                }
-                duration = 200
-                start()
-            }
-
-            checkBox.isChecked = isAdded
-        }
-
         fun bind(post: AllPosts?, selected: Boolean) {
             val postVar = post?.posts!!
+            Log.d(TAG, "bindisFav: $postVar")
             val fileUri = Uri.parse(postVar.fileUri)
+
             if (!fileExists(uri = fileUri, url = postVar.url)) {
                 return
             }
@@ -115,6 +96,7 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
             val filePath = getFilePath(fileUri, mimeType = postVar.mimeType, url = postVar.url) ?: return
             Log.d(TAG, "bind: aspect ratio: $aspectRatio")
 
+
             draweeView.controller = Fresco.newDraweeControllerBuilder()
                 .setUri(Uri.fromFile(File(filePath)))
                 .setAutoPlayAnimations(true)
@@ -122,23 +104,71 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
             draweeView.aspectRatio = aspectRatio
             Log.d(TAG, "bind: uri: ${Uri.fromFile(File(fileUri.path!!))}")
 
-            itemView.setOnClickListener {
-                if (this@GalleryRecyclerViewAdapter.selectedPosts.isNotEmpty()) {
-                    val added = selectItem(post, adapterPosition)
-                    toggleSelectedItem(post, added)
-                } else {
-                    Toast.makeText(itemView.context, fileUri.path, Toast.LENGTH_SHORT).show()
-                    Toast.makeText(itemView.context, Uri.fromFile(File(filePath)).toString(), Toast.LENGTH_SHORT).show()
+
+            if (multiselectOn) {
+                with (itemView.findViewById<MaterialCheckBox>(R.id.recycler_view_favorite)) {
+                    visibility = View.VISIBLE
+                    isChecked = post.posts.isFavorite
+                }
+                itemView.findViewById<CheckBox>(R.id.recycler_view_checkbox).apply {
+                    visibility = View.VISIBLE
+                }
+            } else {
+                itemView.findViewById<MaterialCheckBox>(R.id.recycler_view_favorite).apply {
+                    visibility = View.INVISIBLE
+                }
+                itemView.findViewById<CheckBox>(R.id.recycler_view_checkbox).apply {
+                    visibility = View.INVISIBLE
                 }
             }
 
-            itemView.setOnLongClickListener {
-                val added = selectItem(post, adapterPosition)
-                toggleSelectedItem(post, added)
-                true
+            itemView.apply {
+                setOnClickListener {
+                    if (this@GalleryRecyclerViewAdapter.selectedPosts.isNotEmpty()) {
+                        val added = selectItem(post, adapterPosition)
+                        toggleSelectedItem(post, added)
+                    } else {
+                        Log.d(TAG, "bind: $post")
+                        Toast.makeText(itemView.context, fileUri.path, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(itemView.context, Uri.fromFile(File(filePath)).toString(), Toast.LENGTH_SHORT).show()
+                        listener?.onItemClicked(post)
+                    }
+                }
+
+                setOnLongClickListener {
+                    val added = selectItem(post, adapterPosition)
+                    toggleSelectedItem(post, added)
+                    true
+                }
             }
 
             toggleSelectedItem(post, selected)
+        }
+
+
+        private fun toggleSelectedItem(post: AllPosts, isAdded: Boolean) {
+            val layout = itemView.findViewById<SimpleDraweeView>(R.id.drawee_view)
+            val checkBox = itemView.findViewById<CheckBox>(R.id.recycler_view_checkbox)
+
+            val currPadding = layout.paddingLeft
+            val newPadding: Int
+
+            if (isAdded) {
+                newPadding = itemView.context.resources.getDimension(R.dimen.recyclerview_item_padding_selected).toInt()
+                checkBox.visibility = View.VISIBLE
+            } else {
+                newPadding = 0
+            }
+
+            ValueAnimator.ofInt(currPadding, newPadding).apply {
+                addUpdateListener {
+                    layout.setPadding(it.animatedValue as Int)
+                }
+                duration = 200
+                start()
+            }
+
+            checkBox.isChecked = isAdded
         }
 
         private fun selectItem(post: AllPosts, position: Int): Boolean {
@@ -160,26 +190,29 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
             }
         }
 
-        private fun fileExists(uri: Uri, url: String): Boolean {
+        private fun fileExists(uri: Uri, url: String?): Boolean {
             return try {
                 itemView.context.contentResolver.openAssetFileDescriptor(uri, "r")?.close()
                 true
             } catch (e: FileNotFoundException) {
-                handleFileNotFound(url)
+                if (url != null) {
+                    handleFileNotFound(url, uri.toString())
+                }
                 false
             }
         }
 
-        private fun handleFileNotFound(url: String) {
+        private fun handleFileNotFound(url: String, fileUri: String) {
             scope.launch(Dispatchers.Main) {
                 val db = AppDB.INSTANCE?.postsDao()
                 db?.deleteWithUrl(url)
                 db?.deleteInstagramPostsWithUrl(url)
                 db?.deleteRedditPostsWithUrl(url)
+                db?.deletePostsWithURI(fileUri)
             }
         }
 
-        private fun getFilePath(fileUri: Uri, mimeType: String, url: String): String? {
+        private fun getFilePath(fileUri: Uri, mimeType: String, url: String?): String? {
             var path: String? = null
             val id = fileUri.toString().substringAfterLast("/")
             Log.d(TAG, "getFilePath: $id")
@@ -267,9 +300,7 @@ class GalleryRecyclerViewAdapter(private val scope: CoroutineScope): ListAdapter
 
     class PostsComparator: DiffUtil.ItemCallback<AllPosts>() {
         override fun areItemsTheSame(oldItem: AllPosts, newItem: AllPosts): Boolean {
-            Log.d(TAG, "areItemsTheSame: old: $oldItem")
-            Log.d(TAG, "areItemsTheSame: new: $newItem")
-            return oldItem === newItem
+            return (oldItem.posts.url === newItem.posts.url)
         }
 
         override fun areContentsTheSame(oldItem: AllPosts, newItem: AllPosts): Boolean {

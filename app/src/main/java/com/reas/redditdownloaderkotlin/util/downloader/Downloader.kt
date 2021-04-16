@@ -190,8 +190,6 @@ class Downloader() {
             .progress(progressHandler)
             .response()
 
-        removeMediaStorePendingStatus()
-
         when (result) {
             is Result.Success -> {
                 Log.d(TAG, "downloadFromMediaUrl: success")
@@ -211,6 +209,11 @@ class Downloader() {
         updateStatus(JobStatus.PROCESSING_START)
 
         getWidthAndHeight(mediaUri = this.fileUri)
+        removeMediaStorePendingStatus(
+            height = this.height,
+            width = this.width
+        )
+
 
         listener?.onProcessingEnd()
         updateStatus(JobStatus.PROCESSING_END)
@@ -220,10 +223,18 @@ class Downloader() {
         return "${getFileName()}_${LocalDateTime.now()}.$extension"
     }
 
-    private fun removeMediaStorePendingStatus() {
+    private fun removeMediaStorePendingStatus(height: Int?, width: Int?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.IS_PENDING, 0)
+
+                height?.let { h ->
+                    put(MediaStore.MediaColumns.HEIGHT, h)
+                }
+
+                width?.let { w ->
+                    put(MediaStore.MediaColumns.WIDTH, w)
+                }
             }
             appContext!!.contentResolver.update(fileUri!!, values, null, null)
         }
@@ -425,7 +436,11 @@ class Downloader() {
 
         Files.copy(outputFile.toPath(), outputStream)
         outputStream.close()
-        removeMediaStorePendingStatus()
+
+        removeMediaStorePendingStatus(
+            height = this.height,
+            width = this.width
+        )
         outputFile.delete()
 
         listener?.onProcessingEnd()

@@ -6,7 +6,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".ui.splashscreen.SplashActivity"
-        android:background="@color/appBarColor">
+        android:background="@color/appBarColor"
+        android:fitsSystemWindows="true"
+>
 
   <androidx.viewpager2.widget.ViewPager2
           android:id="@+id/viewpager"

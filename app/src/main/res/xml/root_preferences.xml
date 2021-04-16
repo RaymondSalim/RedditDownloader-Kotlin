@@ -4,12 +4,12 @@
     <PreferenceCategory
             app:title="@string/general_header">
 
-        <Preference
-                app:key="DOWNLOAD_LOCATION"
-                android:title="Download Location"
-                android:persistent="true"
+<!--        <Preference-->
+<!--                app:key="DOWNLOAD_LOCATION"-->
+<!--                android:title="Download Location"-->
+<!--                android:persistent="true"-->
 
-        />
+<!--        />-->
 
 <!--        <EditTextPreference-->
 <!--                app:key="signature"-->
@@ -24,6 +24,16 @@
                 app:entries="@array/theme_entries"
                 app:entryValues="@array/theme_values"
         />
+
+        <Preference
+            app:key="MEDIA_SCAN"
+            app:title="@string/scan_media"
+            />
+
+        <Preference
+            app:key="CLEAR_RECENT_SEARCH"
+            app:title="@string/clear_recent_search"
+            />
 
 
     </PreferenceCategory>

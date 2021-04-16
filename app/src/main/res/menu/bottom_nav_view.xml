@@ -7,9 +7,9 @@
             />
 
     <item
-            android:id="@+id/favorites_fragment"
-            android:title="@string/favorites"
-            android:icon="@drawable/ic_baseline_favorite_24"
+            android:id="@+id/search_fragment"
+            android:title="@string/search"
+            android:icon="@drawable/ic_round_search_24"
             />
 
     <item

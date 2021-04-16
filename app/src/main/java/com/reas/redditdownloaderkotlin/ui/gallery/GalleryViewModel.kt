@@ -1,5 +1,6 @@
-package com.reas.redditdownloaderkotlin
+package com.reas.redditdownloaderkotlin.ui.gallery
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.reas.redditdownloaderkotlin.models.AllPosts
 import com.reas.redditdownloaderkotlin.models.InstagramPosts
@@ -16,7 +17,6 @@ class GalleryViewModel(private val repository: PostsRepository) : ViewModel() {
         MutableLiveData<MutableMap<Int, AllPosts>>()
     }
 
-
     fun insert(post: Posts, redditPosts: RedditPosts) = viewModelScope.launch {
         repository.insert(post, redditPosts)
     }
@@ -24,6 +24,13 @@ class GalleryViewModel(private val repository: PostsRepository) : ViewModel() {
     fun insert(post: Posts, instagramPosts: InstagramPosts) = viewModelScope.launch {
         repository.insert(post, instagramPosts)
     }
+
+    fun updateFavorite(postsList: List<AllPosts>, isFav: Boolean) = viewModelScope.launch {
+        Log.d("UPDATE", "updateFavorite: $isFav")
+        repository.toggleFavorite(postsList, isFav)
+    }
+
+
 }
 
 class GalleryViewModelFactory(private val repository: PostsRepository): ViewModelProvider.Factory {

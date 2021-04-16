@@ -25,7 +25,7 @@ private const val ARG_URL = "url"
  * create an instance of this fragment.
  */
 
-private const val TAG = "GalleryDialogFragment"
+private const val TAG = "PermissionConfirmationDialogFragment"
 
 class GalleryDialogFragment() : DialogFragment() {
     interface GalleryDialogFragmentListener {
@@ -64,7 +64,8 @@ class GalleryDialogFragment() : DialogFragment() {
                 val downloadWorkRequest: OneTimeWorkRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
                     .addTag(binding.urlInput.text.toString()) // Uses url Input as tag
                     .setInputData(workDataOf(
-                        "URL" to binding.urlInput.text.toString()
+                        "URL" to binding.urlInput.text.toString(),
+                        "IS_FAVORITE" to binding.favoriteCheckbox.isChecked
                     ))
                     .setConstraints(
                         Constraints.Builder()
@@ -75,7 +76,6 @@ class GalleryDialogFragment() : DialogFragment() {
 
                 WorkManager
                     .getInstance(requireContext())
-//                    .enqueueUniqueWork("download", ExistingWorkPolicy.APPEND , downloadWorkRequest)
                     .enqueue(downloadWorkRequest)
 
                 Toast.makeText(requireContext(), "Download started", Toast.LENGTH_LONG)

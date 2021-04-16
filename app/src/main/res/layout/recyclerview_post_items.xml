@@ -1,46 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:fresco="http://schemas.android.com/apk/res-auto"
+<com.google.android.material.card.MaterialCardView
+    android:id="@+id/card_view"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+>
+    <com.facebook.drawee.view.SimpleDraweeView
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="parent"
+        android:id="@+id/drawee_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/recyclerview_item_padding">
+        fresco:placeholderImage="@drawable/ic_baseline_image_256"
+        fresco:failureImage="@drawable/ic_baseline_image_256"
+    />
 
-    <com.google.android.material.card.MaterialCardView
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-    >
-        <RelativeLayout
-            android:id="@+id/recycler_view_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        >
 
-            <com.facebook.drawee.view.SimpleDraweeView
-                android:id="@+id/drawee_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                fresco:placeholderImage="@drawable/ic_baseline_image_256"
-                fresco:failureImage="@drawable/ic_baseline_image_256"
-            />
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="4dp"
+            android:visibility="invisible"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:id="@+id/recycler_view_checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RecyclerviewCheckBox"
+        />
 
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:layout_marginTop="4dp"
-                android:visibility="invisible"
-                android:layout_marginStart="4dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:id="@+id/recycler_view_checkbox"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                style="@style/RecyclerviewCheckBox"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentTop="true"
-            />
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:layout_alignParentStart="true"
+            android:visibility="invisible"
+            android:minWidth="48dp"
+            android:minHeight="48dp"
+            android:id="@+id/recycler_view_favorite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/RecyclerViewFavorite"
+        />
+    </RelativeLayout>
 
-        </RelativeLayout>
-
-
-
-    </com.google.android.material.card.MaterialCardView>
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>
